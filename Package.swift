@@ -22,8 +22,8 @@ import Foundation
 // prepare-release` rewrites (per Phase 6 plan, CI never writes to main).
 // Local prepare-release builds a deterministic xcframework zip, shasums it,
 // and bakes both values into this manifest in the release commit.
-let releaseTag = "v1.0.0"
-let releaseChecksum = "514b147f7965fe17acaece9a1157cf9421463b6c9282224983e871ea868b86ef"
+let releaseTag = "v1.0.0-volt.1"
+let releaseChecksum = "434d157d209910378386e6506fbea291502afa3892ac67fccb86d13cad1d81ed"
 
 let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let localBuiltBinary = packageDir
@@ -38,7 +38,7 @@ let irohBinary: Target = useLocalXcframework
         path: "Iroh.xcframework")
     : .binaryTarget(
         name: "Iroh",
-        url: "https://github.com/n0-computer/iroh-ffi/releases/download/\(releaseTag)/IrohLib.xcframework.zip",
+        url: "https://github.com/hansjm10/iroh-ffi/releases/download/\(releaseTag)/IrohLib.xcframework.zip",
         checksum: releaseChecksum)
 
 let package = Package(

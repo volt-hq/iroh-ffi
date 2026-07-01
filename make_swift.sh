@@ -16,19 +16,23 @@ set -eu
 CARGO_PFX="${CARGO_HOME:-$HOME/.cargo}"
 RUSTUP_PFX="${RUSTUP_HOME:-$HOME/.rustup}"
 REPO_PFX="$(pwd)"
-export RUSTFLAGS="${RUSTFLAGS:-} \
+BASE_RUSTFLAGS="${RUSTFLAGS:-} \
   --remap-path-prefix=${CARGO_PFX}/registry=/cargo/registry \
   --remap-path-prefix=${CARGO_PFX}/git=/cargo/git \
   --remap-path-prefix=${RUSTUP_PFX}=/rustup \
   --remap-path-prefix=${REPO_PFX}=/build"
+export RUSTFLAGS="$BASE_RUSTFLAGS"
 # --remap-path-prefix is Rust-only. Several deps (notably `ring`) compile bundled
 # C sources via build.rs + the `cc` crate, and those object files also embed
 # absolute source paths. `-ffile-prefix-map` is clang/gcc's analogue. The `cc`
-# crate forwards CFLAGS to every invocation.
-export CFLAGS="${CFLAGS:-} \
+# crate forwards CFLAGS to every invocation. Keep the path remapping in a
+# reusable value so target-specific deployment-minimum flags can be supplied to
+# the C/assembly objects that the `cc` crate builds for each Apple target.
+COMMON_CFLAGS="${CFLAGS:-} \
   -ffile-prefix-map=${CARGO_PFX}/registry=/cargo/registry \
   -ffile-prefix-map=${CARGO_PFX}/git=/cargo/git \
   -ffile-prefix-map=${REPO_PFX}=/build"
+export CFLAGS="$COMMON_CFLAGS"
 
 # Apple deployment-target floors. The new iroh-rs deps call
 # `nw_path_is_ultra_constrained` (iOS 17 / macOS 14); rustc's default
@@ -49,15 +53,25 @@ TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import js
 # Build default lib (for the bindgen step)
 cargo build --lib
 
-# Compile the rust
+# Compile the rust. The deployment target env vars cover rustc, but C/assembly
+# objects built by dependencies through the `cc` crate need explicit clang
+# min-version flags or they inherit the Xcode SDK's deployment floor.
 echo "Building aarch64-apple-ios"
-cargo build --release --target aarch64-apple-ios
+CFLAGS="$COMMON_CFLAGS -miphoneos-version-min=${IPHONEOS_DEPLOYMENT_TARGET}" \
+  cargo build --release --target aarch64-apple-ios
 echo "Building aarch64-apple-ios-sim"
-cargo build --release --target aarch64-apple-ios-sim
+CFLAGS="$COMMON_CFLAGS -mios-simulator-version-min=${IPHONEOS_DEPLOYMENT_TARGET}" \
+  cargo build --release --target aarch64-apple-ios-sim
 echo "Building x86_64-apple-ios"
-cargo build --release --target x86_64-apple-ios
+# Work around curve25519-dalek 5.0.0-rc.0 failing to load its x86 proc-macro
+# backend in this cross-target build; the serial backend is fine for the
+# Intel simulator slice and keeps arm64 device/sim builds unchanged.
+RUSTFLAGS="$BASE_RUSTFLAGS --cfg curve25519_dalek_backend=\"serial\"" \
+  CFLAGS="$COMMON_CFLAGS -mios-simulator-version-min=${IPHONEOS_DEPLOYMENT_TARGET}" \
+  cargo build --release --target x86_64-apple-ios
 echo "Building aarch64-apple-darwin"
-cargo build --release --target aarch64-apple-darwin
+CFLAGS="$COMMON_CFLAGS -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+  cargo build --release --target aarch64-apple-darwin
 
 # Remove old files if they exist
 IOS_ARM64_FRAMEWORK="$FRAMEWORK_NAME.xcframework/ios-arm64/$FRAMEWORK_NAME.framework"
