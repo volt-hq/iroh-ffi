@@ -58,12 +58,14 @@ scan_archive() {
   local expected_platform="$3"
   local max_minos="$4"
   local out_dir="$work_dir/objects/${label//[^A-Za-z0-9_.-]/_}"
-  local saw_build_version=0
+  local saw_version_command=0
   local saw_max_minos=0
   local obj
   local records
+  local record_kind
   local platform
   local minos
+  local reported_platform
 
   mkdir -p "$out_dir"
   (cd "$out_dir" && ar -x "$archive")
@@ -74,28 +76,62 @@ scan_archive() {
     fi
 
     records="$(otool -l "$obj" | awk '
-      /LC_BUILD_VERSION/ { in_block=1; platform=""; minos=""; next }
-      in_block && /platform/ { platform=$2 }
-      in_block && /minos/ { minos=$2 }
-      in_block && /sdk/ {
-        if (platform != "" && minos != "") print platform, minos;
-        in_block=0;
+      $1 == "cmd" && $2 == "LC_BUILD_VERSION" {
+        kind="build"; platform=""; minos=""; next
+      }
+      kind == "build" && $1 == "platform" { platform=$2 }
+      kind == "build" && $1 == "minos" { minos=$2 }
+      kind == "build" && $1 == "sdk" {
+        if (platform != "" && minos != "") print kind, platform, minos
+        kind=""; next
+      }
+      $1 == "cmd" && $2 ~ /^LC_VERSION_MIN_/ {
+        kind=$2; version=""; next
+      }
+      kind ~ /^LC_VERSION_MIN_/ && $1 == "version" { version=$2 }
+      kind ~ /^LC_VERSION_MIN_/ && $1 == "sdk" {
+        if (version != "") print kind, "-", version
+        kind=""; next
       }
     ')"
     # Rust's compiler_builtins archive members can be valid Mach-O objects
-    # without a platform load command. The linker assigns their effective
-    # platform from the surrounding archive, so validate every command that is
-    # present and require the slice as a whole to contain target metadata.
+    # without a minimum-version load command. The linker assigns their
+    # effective platform from the surrounding archive, so validate every
+    # modern or legacy command that is present and require the slice as a
+    # whole to contain target metadata.
     if [[ -z "$records" ]]; then
       continue
     fi
 
-    while read -r platform minos; do
-      saw_build_version=1
-      if [[ "$platform" != "$expected_platform" ]]; then
-        echo "error: $label object $(basename "$obj") has platform=$platform, expected=$expected_platform" >&2
-        exit 1
-      fi
+    while read -r record_kind platform minos; do
+      saw_version_command=1
+      case "$record_kind" in
+        build)
+          if [[ "$platform" != "$expected_platform" ]]; then
+            echo "error: $label object $(basename "$obj") has platform=$platform, expected=$expected_platform" >&2
+            exit 1
+          fi
+          reported_platform="$platform"
+          ;;
+        LC_VERSION_MIN_IPHONEOS)
+          if [[ "$expected_platform" != "2" && "$expected_platform" != "7" ]]; then
+            echo "error: $label object $(basename "$obj") has legacy iOS metadata for platform=$expected_platform" >&2
+            exit 1
+          fi
+          reported_platform="legacy-ios"
+          ;;
+        LC_VERSION_MIN_MACOSX)
+          if [[ "$expected_platform" != "1" ]]; then
+            echo "error: $label object $(basename "$obj") has legacy macOS metadata for platform=$expected_platform" >&2
+            exit 1
+          fi
+          reported_platform="legacy-macos"
+          ;;
+        *)
+          echo "error: $label object $(basename "$obj") has unsupported deployment metadata $record_kind" >&2
+          exit 1
+          ;;
+      esac
       if version_gt "$minos" "$max_minos"; then
         echo "error: $label object $(basename "$obj") has minos=$minos above supported maximum $max_minos" >&2
         exit 1
@@ -104,12 +140,12 @@ scan_archive() {
         saw_max_minos=1
       fi
       printf '%s platform=%s minos=%s object=%s\n' \
-        "$label" "$platform" "$minos" "$(basename "$obj")" >> "$work_dir/build-versions.txt"
+        "$label" "$reported_platform" "$minos" "$(basename "$obj")" >> "$work_dir/build-versions.txt"
     done <<< "$records"
   done < <(find "$out_dir" -type f -print0)
 
-  if [[ "$saw_build_version" != "1" ]]; then
-    echo "error: no LC_BUILD_VERSION entries found in $label" >&2
+  if [[ "$saw_version_command" != "1" ]]; then
+    echo "error: no deployment-version load commands found in $label" >&2
     exit 1
   fi
   if [[ "$saw_max_minos" != "1" ]]; then
