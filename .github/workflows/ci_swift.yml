@@ -29,3 +29,5 @@ jobs:
       - uses: davidB/rust-cargo-make@v1
       - name: cargo make test-swift
         run: cargo make test-swift
+      - name: Verify release XCFramework layout and deployment targets
+        run: cargo make verify-swift-xcframework

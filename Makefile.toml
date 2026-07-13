@@ -194,15 +194,12 @@ dependencies = ["swift-xcframework"]
 script_runner = "@shell"
 script = '''
 set -eu
-# `swift test` (SwiftPM CLI) fails to form the `Iroh` clang module from the
-# framework-bundle xcframework on the CI runner (every uniffi type "not in
-# scope"), while full Xcode consumes it fine. Drive tests through xcodebuild
-# so local and CI both use the working toolchain.
+# Drive tests through Xcode so local and CI exercise the same Apple toolchain
+# that consumes the release XCFramework.
 #
-# Use a clean, repo-local derived-data dir: the self-hosted CI runner reuses
-# the shared DerivedData across runs and otherwise relinks a stale extracted
-# Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
-# run forces re-extraction of the just-built xcframework.
+# Use a clean, repo-local derived-data dir because the self-hosted CI runner
+# reuses shared DerivedData. A fresh path forces consumption of the just-built
+# flat static-library xcframework.
 #
 # Run xcodebuild as the logged-in console user and force arm64, so it uses
 # the right session and the arm64-only xcframework macOS slice.
@@ -235,22 +232,23 @@ set -eu
 ./package_swift.sh
 '''
 
+[tasks.verify-swift-xcframework]
+description = "Verify the flat static-library XCFramework layout, architectures, platforms, and deployment targets."
+script_runner = "@shell"
+script = '''
+set -eu
+scripts/verify_swift_xcframework.sh
+'''
+
 # ---------------------------------------------------------------------------
 # Docs (self-hosted on GitHub Pages; Swift is additionally on the SPI)
 # ---------------------------------------------------------------------------
 
-[tasks.swift-macos-framework]
-description = "Build only the macOS-arm64 framework slice (for DocC; no iOS slices)."
-script_runner = "@shell"
-script = '''
-set -eu
-./make_swift_macos.sh
-'''
-
 [tasks.docs-swift]
 description = "Build the Swift DocC docs, laid out for Pages static hosting."
-# DocC only needs the macOS slice — not the full 4-target xcframework.
-dependencies = ["swift-macos-framework"]
+# The flat XCFramework is generated in one xcodebuild invocation, so docs use
+# the same release artifact instead of maintaining a second bundle layout.
+dependencies = ["swift-xcframework"]
 script_runner = "@shell"
 script = '''
 set -eu
@@ -353,6 +351,7 @@ fi
 
 echo "==> swift: build + deterministic zip"
 cargo make swift-xcframework >/dev/null
+cargo make verify-swift-xcframework
 bash scripts/release/zip_xcframework.sh
 H1=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
 bash scripts/release/zip_xcframework.sh
@@ -418,6 +417,7 @@ echo "==> refresh iroh-js/yarn.lock"
 
 echo "==> build full xcframework"
 cargo make swift-xcframework >/dev/null
+cargo make verify-swift-xcframework
 
 echo "==> deterministic zip + checksum"
 bash scripts/release/zip_xcframework.sh

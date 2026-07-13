@@ -1,6 +1,7 @@
 set -eu
 
-# Builds the full 4-target Apple xcframework. Prefer `cargo make swift-xcframework`.
+# Builds the full Apple xcframework as flat static-library slices. Prefer
+# `cargo make swift-xcframework`.
 
 # Reproducible-build path normalization. Without this, every `.a` binary inside
 # the xcframework embeds absolute paths from `file!()` macros (in deps, in
@@ -38,7 +39,7 @@ export CFLAGS="$COMMON_CFLAGS"
 # `nw_path_is_ultra_constrained` (iOS 17 / macOS 14); rustc's default
 # `*-apple-ios` floor (10) and the unset macOS floor produce undefined-symbol
 # link errors. Keep these in sync with Package.swift `platforms:`.
-export IPHONEOS_DEPLOYMENT_TARGET="17.5"
+export IPHONEOS_DEPLOYMENT_TARGET="18.0"
 export MACOSX_DEPLOYMENT_TARGET="14.5"
 
 # Env
@@ -73,48 +74,51 @@ echo "Building aarch64-apple-darwin"
 CFLAGS="$COMMON_CFLAGS -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
   cargo build --release --target aarch64-apple-darwin
 
-# Remove old files if they exist
-IOS_ARM64_FRAMEWORK="$FRAMEWORK_NAME.xcframework/ios-arm64/$FRAMEWORK_NAME.framework"
-IOS_SIM_FRAMEWORK="$FRAMEWORK_NAME.xcframework/ios-arm64_x86_64-simulator/$FRAMEWORK_NAME.framework"
-MACOS_ARM64_FRAMEWORK="$FRAMEWORK_NAME.xcframework/macos-arm64/$FRAMEWORK_NAME.framework"
-
-rm -f "$IOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
-rm -f "$IOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
-rm -f "$IOS_SIM_FRAMEWORK/$FRAMEWORK_NAME"
-rm -f "$IOS_SIM_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
-rm -f "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
-rm -f "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
-
-rm -f "$TARGET_DIR/universal.a"
-rm -f $INCLUDE_DIR/*
-
-# Make dirs if it doesn't exist
-mkdir -p $INCLUDE_DIR
+# Generate every output from scratch so stale framework-bundle slices cannot
+# leak into a release assembled with the flat `-library` layout.
+rm -rf "$FRAMEWORK_NAME.xcframework"
+rm -rf "$INCLUDE_DIR"
+mkdir -p "$INCLUDE_DIR"
 
 # UniFfi bindgen
 cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DIR --library "$TARGET_DIR/debug/lib${UDL_NAME}.dylib" --config uniffi.toml
 
-# Make fat lib for sims
+# Stage the C module headers once for all three xcframework slices.
+HEADERS_STAGE="$TARGET_DIR/apple-xcf-headers"
+rm -rf "$HEADERS_STAGE"
+mkdir -p "$HEADERS_STAGE"
+cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" "$HEADERS_STAGE/${UDL_NAME}FFI.h"
+cat > "$HEADERS_STAGE/Export.h" <<EOF
+#include "${UDL_NAME}FFI.h"
+EOF
+cat > "$HEADERS_STAGE/module.modulemap" <<EOF
+module $FRAMEWORK_NAME {
+    umbrella header "Export.h"
+    export *
+    module * { export * }
+}
+EOF
+
+# Make the fat static library for the simulator slice.
+SIM_FAT="$TARGET_DIR/apple-sim-fat/lib${UDL_NAME}.a"
+mkdir -p "$(dirname "$SIM_FAT")"
+rm -f "$SIM_FAT"
 lipo -create \
     "$TARGET_DIR/aarch64-apple-ios-sim/release/lib${UDL_NAME}.a" \
     "$TARGET_DIR/x86_64-apple-ios/release/lib${UDL_NAME}.a" \
-    -output "$TARGET_DIR/universal.a"
+    -output "$SIM_FAT"
 
-# Move binaries
-cp "$TARGET_DIR/aarch64-apple-ios/release/lib${UDL_NAME}.a" \
-    "$IOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
-cp "$TARGET_DIR/universal.a" \
-    "$IOS_SIM_FRAMEWORK/$FRAMEWORK_NAME"
-cp "$TARGET_DIR/aarch64-apple-darwin/release/lib${UDL_NAME}.a" \
-    "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
-
-# Move headers
-cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" \
-    "$IOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
-cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" \
-    "$IOS_SIM_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
-cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" \
-    "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
+# Let Xcode generate the xcframework metadata from the compiled archives. A
+# flat static-library xcframework is linked into consumers and is not copied as
+# an empty Iroh.framework bundle, avoiding App Store bundle-plist validation.
+xcodebuild -create-xcframework \
+    -library "$TARGET_DIR/aarch64-apple-ios/release/lib${UDL_NAME}.a" \
+    -headers "$HEADERS_STAGE" \
+    -library "$SIM_FAT" \
+    -headers "$HEADERS_STAGE" \
+    -library "$TARGET_DIR/aarch64-apple-darwin/release/lib${UDL_NAME}.a" \
+    -headers "$HEADERS_STAGE" \
+    -output "$FRAMEWORK_NAME.xcframework"
 
 # Move swift interface
 sed "s/${UDL_NAME}FFI/$FRAMEWORK_NAME/g" "$INCLUDE_DIR/$UDL_NAME.swift" > "$INCLUDE_DIR/$SWIFT_INTERFACE.swift"
@@ -123,5 +127,5 @@ rm -f "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 cp "$INCLUDE_DIR/$SWIFT_INTERFACE.swift" \
     "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 
-# The single root Package.swift consumes `Iroh.xcframework` at the repo root
-# directly (IROH_LOCAL_XCFRAMEWORK mode), so no artifacts copy is needed.
+# Package.swift consumes the generated `Iroh.xcframework` directly in local
+# development; release consumers download the deterministic zip.

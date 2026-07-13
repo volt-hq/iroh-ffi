@@ -16,14 +16,9 @@ DerivedData/
 
 /IrohLib.xcframework.zip
 
-/Iroh.xcframework/*/Iroh.framework/*
-/Iroh.xcframework/*/Iroh.framework/Headers/*
-!/Iroh.xcframework/*/Iroh.framework/Info.plist
-!/Iroh.xcframework/*/Iroh.framework/Modules
-!/Iroh.xcframework/*/Iroh.framework/Headers
-!/Iroh.xcframework/*/Iroh.framework/Headers/iroh_ffiFFI.h
-!/Iroh.xcframework/*/Iroh.framework/Headers/Export.h
-
+# The whole xcframework is generated from the Rust static libraries by
+# `xcodebuild -create-xcframework -library`. No framework skeleton is checked in.
+/Iroh.xcframework/
 
 /IrohLib/artifacts/
 
