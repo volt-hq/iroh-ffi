@@ -37,7 +37,7 @@ let irohBinary: Target = useLocalXcframework
         path: "Iroh.xcframework")
     : .binaryTarget(
         name: "Iroh",
-        url: "https://github.com/hansjm10/iroh-ffi/releases/download/\(releaseTag)/IrohLib.xcframework.zip",
+        url: "https://github.com/volt-hq/iroh-ffi/releases/download/\(releaseTag)/IrohLib.xcframework.zip",
         checksum: releaseChecksum)
 
 let package = Package(
