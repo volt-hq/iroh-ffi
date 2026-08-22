@@ -1,6 +1,6 @@
 {
-  "name": "@number0/iroh",
-  "author": "number0",
+  "name": "@hansjm10/volt-iroh",
+  "author": "n0 team and Volt contributors",
   "description": "A toolkit for building distributed applications",
   "keywords": [
     "iroh",
@@ -12,10 +12,16 @@
     "network",
     "protocol"
   ],
-  "version": "1.1.0",
+  "version": "1.1.1-volt.1",
   "type": "commonjs",
-  "main": "iroh-js/index.js",
-  "types": "iroh-js/index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
+  ],
   "engines": {
     "node": ">= 20.3.0"
   },
@@ -37,9 +43,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/n0-computer/iroh-ffi.git"
+    "url": "https://github.com/volt-hq/iroh-ffi.git"
   },
   "license": "MIT OR Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "devDependencies": {
     "@napi-rs/cli": "^3.7.2",
     "typedoc": "^0.28.20",
@@ -50,22 +60,12 @@
     "build": "napi build --platform --release --strip",
     "build:debug": "napi build --platform",
     "docs": "typedoc",
-    "prepublishOnly": "napi pre-publish -t npm --no-gh-release",
+    "prepublishOnly": "node scripts/stage-release-licenses.mjs && napi pre-publish -t npm --no-gh-release",
+    "stage:release": "node scripts/stage-release-licenses.mjs",
     "test": "node --test test/*.mjs",
+    "verify:metadata": "node scripts/verify-release-packages.mjs --metadata-only",
+    "verify:release": "node scripts/verify-release-packages.mjs",
     "version": "napi version"
   },
-  "packageManager": "yarn@1.22.22",
-  "optionalDependencies": {
-    "@number0/iroh-android-arm-eabi": "1.0.0",
-    "@number0/iroh-android-arm64": "1.0.0",
-    "@number0/iroh-darwin-arm64": "1.0.0",
-    "@number0/iroh-linux-arm-gnueabihf": "1.0.0",
-    "@number0/iroh-linux-arm-musleabihf": "1.0.0",
-    "@number0/iroh-linux-arm64-gnu": "1.0.0",
-    "@number0/iroh-linux-arm64-musl": "1.0.0",
-    "@number0/iroh-linux-x64-gnu": "1.0.0",
-    "@number0/iroh-linux-x64-musl": "1.0.0",
-    "@number0/iroh-win32-arm64-msvc": "1.0.0",
-    "@number0/iroh-win32-x64-msvc": "1.0.0"
-  }
+  "packageManager": "yarn@4.4.0"
 }

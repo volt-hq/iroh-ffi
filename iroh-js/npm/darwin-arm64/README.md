@@ -1,3 +1,3 @@
-# `@number0/iroh-darwin-arm64`
+# `@hansjm10/volt-iroh-darwin-arm64`
 
-This is the **aarch64-apple-darwin** binary for `@number0/iroh`
+This is the **aarch64-apple-darwin** binary for `@hansjm10/volt-iroh`.

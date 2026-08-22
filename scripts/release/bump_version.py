@@ -90,7 +90,7 @@ def bump_npm(version: str) -> None:
     print(f"  iroh-js/package.json version -> {version}")
 
     # Per-target sub-packages under iroh-js/npm/<target>/package.json — each one is
-    # published as a separate npm package (@number0/iroh-<target>) and must carry
+    # published as a separate npm package (@hansjm10/volt-iroh-<target>) and must carry
     # the same version, or the main package's optionalDependencies won't resolve.
     sub_pkgs = sorted((REPO / "iroh-js" / "npm").glob("*/package.json"))
     if not sub_pkgs:

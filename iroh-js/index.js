@@ -75,10 +75,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-android-arm64')
-        const bindingPackageVersion = require('@number0/iroh-android-arm64/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-android-arm64')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-android-arm64/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -91,10 +91,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-android-arm-eabi')
-        const bindingPackageVersion = require('@number0/iroh-android-arm-eabi/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-android-arm-eabi')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-android-arm-eabi/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -112,10 +112,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-win32-x64-gnu')
-        const bindingPackageVersion = require('@number0/iroh-win32-x64-gnu/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-win32-x64-gnu')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-win32-x64-gnu/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -128,10 +128,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-win32-x64-msvc')
-        const bindingPackageVersion = require('@number0/iroh-win32-x64-msvc/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-win32-x64-msvc')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-win32-x64-msvc/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -145,10 +145,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-win32-ia32-msvc')
-        const bindingPackageVersion = require('@number0/iroh-win32-ia32-msvc/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-win32-ia32-msvc')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-win32-ia32-msvc/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -161,10 +161,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-win32-arm64-msvc')
-        const bindingPackageVersion = require('@number0/iroh-win32-arm64-msvc/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-win32-arm64-msvc')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-win32-arm64-msvc/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -180,10 +180,10 @@ function requireNative() {
       loadErrors.push(e)
     }
     try {
-      const binding = require('@number0/iroh-darwin-universal')
-      const bindingPackageVersion = require('@number0/iroh-darwin-universal/package.json').version
-      if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-        throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+      const binding = require('@hansjm10/volt-iroh-darwin-universal')
+      const bindingPackageVersion = require('@hansjm10/volt-iroh-darwin-universal/package.json').version
+      if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+        throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
       }
       return binding
     } catch (e) {
@@ -196,10 +196,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-darwin-x64')
-        const bindingPackageVersion = require('@number0/iroh-darwin-x64/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-darwin-x64')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-darwin-x64/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -212,10 +212,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-darwin-arm64')
-        const bindingPackageVersion = require('@number0/iroh-darwin-arm64/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-darwin-arm64')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-darwin-arm64/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -232,10 +232,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-freebsd-x64')
-        const bindingPackageVersion = require('@number0/iroh-freebsd-x64/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-freebsd-x64')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-freebsd-x64/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -248,10 +248,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-freebsd-arm64')
-        const bindingPackageVersion = require('@number0/iroh-freebsd-arm64/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-freebsd-arm64')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-freebsd-arm64/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -269,10 +269,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-x64-musl')
-          const bindingPackageVersion = require('@number0/iroh-linux-x64-musl/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-x64-musl')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-x64-musl/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -285,10 +285,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-x64-gnu')
-          const bindingPackageVersion = require('@number0/iroh-linux-x64-gnu/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-x64-gnu')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-x64-gnu/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -303,10 +303,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-arm64-musl')
-          const bindingPackageVersion = require('@number0/iroh-linux-arm64-musl/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-arm64-musl')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-arm64-musl/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -319,10 +319,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-arm64-gnu')
-          const bindingPackageVersion = require('@number0/iroh-linux-arm64-gnu/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-arm64-gnu')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-arm64-gnu/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -337,10 +337,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-arm-musleabihf')
-          const bindingPackageVersion = require('@number0/iroh-linux-arm-musleabihf/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-arm-musleabihf')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-arm-musleabihf/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -353,10 +353,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-arm-gnueabihf')
-          const bindingPackageVersion = require('@number0/iroh-linux-arm-gnueabihf/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-arm-gnueabihf')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-arm-gnueabihf/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -371,10 +371,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-loong64-musl')
-          const bindingPackageVersion = require('@number0/iroh-linux-loong64-musl/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-loong64-musl')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-loong64-musl/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -387,10 +387,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-loong64-gnu')
-          const bindingPackageVersion = require('@number0/iroh-linux-loong64-gnu/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-loong64-gnu')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-loong64-gnu/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -405,10 +405,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-riscv64-musl')
-          const bindingPackageVersion = require('@number0/iroh-linux-riscv64-musl/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-riscv64-musl')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-riscv64-musl/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -421,10 +421,10 @@ function requireNative() {
           loadErrors.push(e)
         }
         try {
-          const binding = require('@number0/iroh-linux-riscv64-gnu')
-          const bindingPackageVersion = require('@number0/iroh-linux-riscv64-gnu/package.json').version
-          if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-            throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+          const binding = require('@hansjm10/volt-iroh-linux-riscv64-gnu')
+          const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-riscv64-gnu/package.json').version
+          if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+            throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
           }
           return binding
         } catch (e) {
@@ -438,10 +438,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-linux-ppc64-gnu')
-        const bindingPackageVersion = require('@number0/iroh-linux-ppc64-gnu/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-linux-ppc64-gnu')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-ppc64-gnu/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -454,10 +454,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-linux-s390x-gnu')
-        const bindingPackageVersion = require('@number0/iroh-linux-s390x-gnu/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-linux-s390x-gnu')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-linux-s390x-gnu/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -474,10 +474,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-openharmony-arm64')
-        const bindingPackageVersion = require('@number0/iroh-openharmony-arm64/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-openharmony-arm64')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-openharmony-arm64/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -490,10 +490,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-openharmony-x64')
-        const bindingPackageVersion = require('@number0/iroh-openharmony-x64/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-openharmony-x64')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-openharmony-x64/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -506,10 +506,10 @@ function requireNative() {
         loadErrors.push(e)
       }
       try {
-        const binding = require('@number0/iroh-openharmony-arm')
-        const bindingPackageVersion = require('@number0/iroh-openharmony-arm/package.json').version
-        if (bindingPackageVersion !== '1.1.0' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
-          throw new Error(`Native binding package version mismatch, expected 1.1.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
+        const binding = require('@hansjm10/volt-iroh-openharmony-arm')
+        const bindingPackageVersion = require('@hansjm10/volt-iroh-openharmony-arm/package.json').version
+        if (bindingPackageVersion !== '1.1.1-volt.1' && process.env.NAPI_RS_ENFORCE_VERSION_CHECK && process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== '0') {
+          throw new Error(`Native binding package version mismatch, expected 1.1.1-volt.1 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`)
         }
         return binding
       } catch (e) {
@@ -548,7 +548,7 @@ if (!nativeBinding || forceWasi) {
   }
   if (!nativeBinding || forceWasi) {
     try {
-      wasiBinding = require('@number0/iroh-wasm32-wasi')
+      wasiBinding = require('@hansjm10/volt-iroh-wasm32-wasi')
       nativeBinding = wasiBinding
     } catch (err) {
       if (forceWasi) {
@@ -607,6 +607,7 @@ module.exports.Signature = nativeBinding.Signature
 module.exports.WatchHandle = nativeBinding.WatchHandle
 module.exports.LogLevel = nativeBinding.LogLevel
 module.exports.PathEventKind = nativeBinding.PathEventKind
+module.exports.presetIrohServices = nativeBinding.presetIrohServices
 module.exports.presetMinimal = nativeBinding.presetMinimal
 module.exports.presetN0 = nativeBinding.presetN0
 module.exports.presetN0DisableRelay = nativeBinding.presetN0DisableRelay

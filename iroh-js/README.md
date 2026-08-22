@@ -1,33 +1,39 @@
-# `@number0/iroh`
+# `@hansjm10/volt-iroh`
 
-> A toolkit for building distributed applications
+> A Volt-owned distribution of the Iroh Node.js bindings
+
+This package preserves the JavaScript and native API from the upstream
+[`iroh-ffi`](https://github.com/n0-computer/iroh-ffi) project. Volt owns this
+npm namespace and release path; the original n0 authors and contributors retain
+attribution in the repository history and dual-license notices.
 
 ## Install
 
 ```sh
-> npm i --save @number0/iroh
+npm install --save-exact @hansjm10/volt-iroh@1.1.1-volt.1
 ```
 
+See the fork's
+[owned release documentation](https://github.com/volt-hq/iroh-ffi/blob/volt/owned-iroh/iroh-js/OWNED_RELEASE.md)
+for the exact upstream base, carried fixes, platform matrix, and release/bootstrap
+procedure.
 
 ## Development
 
 ```sh
 # debug build
-> yarn build:debug
+cargo make js-build
 
-# run tests
-> yarn test
+# build and run the native JS regression suite
+cargo make test-js
 ```
-
 
 ## License
 
 This project is licensed under either of
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
-   http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or
-   http://opensource.org/licenses/MIT)
+ * Apache License, Version 2.0 (`LICENSE-APACHE` in each published package)
+ * MIT license (`LICENSE-MIT` in each published package)
 
 at your option.
 

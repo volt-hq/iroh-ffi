@@ -360,7 +360,7 @@ script_runner = "@shell"
 script = '''
 set -eu
 # test-js (this task's dependency) already builds index.node + runs the test
-# suite, which loads the binding the same way `require('@number0/iroh')` does
+# suite, which loads the binding the same way `require('@hansjm10/volt-iroh')` does
 # in a consumer project. The per-target sub-package layout that napi-rs ships
 # is only built up at publish time inside CI (`napi pre-publish` rewrites
 # optionalDependencies to per-target packages that don't exist on npm until
@@ -668,6 +668,27 @@ echo ""
 echo "pre-release-check passed — safe to run cargo make prepare-release <VERSION>"
 '''
 
+[tasks.prepare-owned-npm-release]
+description = "Bump only the Volt-owned napi package, refresh its lockfiles and generated loader, and build the native host addon. Usage: cargo make prepare-owned-npm-release <VERSION>"
+script_runner = "@shell"
+script = '''
+set -eu
+VERSION="${1:?usage: cargo make prepare-owned-npm-release <VERSION> (no leading v)}"
+
+python3 scripts/release/bump_owned_npm_version.py "$VERSION"
+( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
+cargo make js-build >/dev/null
+( cd iroh-js && yarn verify:metadata )
+
+cat <<EOF
+
+Prepared @hansjm10/volt-iroh@$VERSION.
+After the publisher bootstrap in iroh-js/OWNED_RELEASE.md, release exactly this commit with:
+  git tag -a npm-v$VERSION -m "npm: @hansjm10/volt-iroh@$VERSION"
+  git push origin npm-v$VERSION
+EOF
+'''
+
 [tasks.prepare-release]
 description = "Bump version literals across every binding manifest. The Swift xcframework checksum is filled in by PR CI (release_swift.yml) once the release PR is open, so this no longer needs Xcode locally. Usage: cargo make prepare-release <VERSION>"
 script_runner = "@shell"
@@ -684,7 +705,7 @@ cargo update -p iroh-ffi --precise "$VERSION" >/dev/null
 echo "==> refresh iroh-js/yarn.lock"
 ( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
 
-# `napi build` regenerates iroh-js/index.js with the new version baked into
+# `napi build` regenerates iroh-js/index.js with the package name and new version baked into
 # every `bindingPackageVersion !== '<V>'` check + error message. Without this
 # step, publish CI regenerates index.js on the runner and ships a fresh copy
 # to npm — but the committed file on main stays stuck on the old literal,

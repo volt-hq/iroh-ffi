@@ -6,8 +6,7 @@ env:
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -18,8 +17,10 @@ on:
   push:
     branches:
       - main
+      - volt/owned-iroh
+    # Deliberately does not match the fork's cross-language v* release jobs.
     tags:
-    - "v*"
+      - "npm-v*"
     paths-ignore:
       - '**/*.md'
       - LICENSE
@@ -477,11 +478,16 @@ jobs:
             ls -la
   publish:
     name: Publish
+    if: startsWith(github.ref, 'refs/tags/npm-v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         working-directory: ./iroh-js
     needs:
+      - native-test
       - test-macOS-windows-binding
       - test-linux-x64-gnu-binding
       - test-linux-x64-musl-binding
@@ -501,30 +507,38 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+          package-manager-cache: false
+      - name: Enable corepack (yarn)
+        run: npm install -g corepack --force && corepack enable
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --immutable
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: iroh-js/artifacts/
       - name: Move artifacts
         run: yarn artifacts
-      - name: Move README # Hack to get npm README to work
-        run: cp README.md ../README.md
+      - name: Stage license texts
+        run: yarn stage:release
+      - name: Verify release packages and tag
+        run: |
+          set -eu
+          VERSION=$(node -p "require('./package.json').version")
+          test "$GITHUB_REF_NAME" = "npm-v$VERSION" || {
+            echo "release tag npm-v$VERSION does not match $GITHUB_REF_NAME" >&2
+            exit 1
+          }
+          yarn verify:release
       - name: Compute npm dist-tag
-        # Prerelease versions (e.g. 1.0.0-rc.1) must publish under a non-`latest`
-        # dist-tag — npm 11.5+ refuses otherwise. Stable versions go to `latest`.
+        # Prerelease versions publish under `next`; stable versions use `latest`.
         id: npm_tag
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.ref, 'refs/tags/v')
         run: |
           echo "tag=$(node -p "/-/.test(require('./package.json').version) ? 'next' : 'latest'")" >> "$GITHUB_OUTPUT"
-      - name: Publish
-        # Auth via npm Trusted Publishing (OIDC, no token). Configured per-package
-        # at https://www.npmjs.com/package/<pkg>/access → Trusted publishers.
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.ref, 'refs/tags/v')
+      - name: Publish main and platform packages
+        # napi pre-publish publishes every native optional package first. Each
+        # package trusts this workflow via npm OIDC; no npm token is used.
         run: npm publish --access public --provenance
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_ACCESS: public
+          NPM_CONFIG_PROVENANCE: true
           NPM_CONFIG_TAG: ${{ steps.npm_tag.outputs.tag }}

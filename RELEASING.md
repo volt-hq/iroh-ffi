@@ -1,5 +1,10 @@
 # Releasing iroh-ffi
 
+> **Volt fork:** the owned npm package is released independently. Follow
+> [`iroh-js/OWNED_RELEASE.md`](iroh-js/OWNED_RELEASE.md); do not use a `v*` tag
+> to publish it. The cross-language instructions below are retained for the
+> upstream project history and are not the Volt npm release path.
+
 A release ships a new version of the iroh-ffi crate's surface to every binding
 host (npm, PyPI, Maven Central, GitHub Releases for Swift) plus refreshed docs
 on GitHub Pages. The tag is the trigger — pushing `v<VERSION>` fans out to all
@@ -16,7 +21,7 @@ CI never writes to `main`.
 - Local shell with `cargo`, `yarn`, and Python 3 (no Xcode needed —
   prepare-release no longer builds the xcframework).
 - Push rights on the repo + the relevant publisher accounts (npm
-  `@number0/iroh`; PyPI trusted publisher for `iroh`; Sonatype Central for
+  `@hansjm10/volt-iroh`; PyPI trusted publisher for `iroh`; Sonatype Central for
   `computer.iroh`).
 - `main` is green at the commit you want to release from.
 
@@ -87,7 +92,7 @@ CI never writes to `main`.
    | Workflow | Publishes |
    |---|---|
    | `release.yml` | promotes the draft GH release v<version> to published; uploads per-OS C lib archives |
-   | `ci_js.yml` `publish` | `@number0/iroh` to npm (`--provenance`, OIDC) |
+   | `ci_js.yml` `publish` | Not triggered by `v*` in the Volt fork; use the isolated `npm-v*` flow |
    | `wheels.yml` `publish` | `iroh` wheels to PyPI (OIDC) |
    | `release.yml` `build-and-publish-kotlin` | `computer.iroh:iroh` (JVM JAR) + `computer.iroh:iroh-android` (AAR) to Maven Central — one `./gradlew publishAndReleaseToMavenCentral` invocation, both subprojects published in the same Sonatype staging |
    | `docs.yml` | GitHub Pages site refresh |
@@ -146,7 +151,7 @@ re-firing on its own output.
 
 ## One-time publisher setup (per host)
 
-- **npm** — Trusted Publishing configured at npmjs.com (no token).
+- **npm** — Trusted Publishing configured per owned main/platform package at npmjs.com (no token); see `iroh-js/OWNED_RELEASE.md`.
 - **PyPI** — register a trusted publisher at
   <https://pypi.org/manage/account/publishing/>: project `iroh`, owner
   `n0-computer`, repository `iroh-ffi`, workflow `wheels.yml`.

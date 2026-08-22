@@ -8,6 +8,13 @@ use tokio::sync::Mutex;
 
 use crate::{EndpointAddr, PathEvent, PathSnapshot};
 
+fn connected_home_relay_urls(statuses: impl IntoIterator<Item = (bool, String)>) -> Vec<String> {
+    statuses
+        .into_iter()
+        .filter_map(|(is_connected, url)| is_connected.then_some(url))
+        .collect()
+}
+
 /// Handle to a running watcher task. Call `stop()` (or drop) to unregister.
 #[napi]
 pub struct WatchHandle {
@@ -54,11 +61,11 @@ pub(crate) fn spawn_home_relay_watch(
         use iroh::Watcher;
         let mut stream = endpoint.home_relay_status().stream();
         while let Some(statuses) = stream.next().await {
-            let urls: Vec<String> = statuses
-                .into_iter()
-                .filter(|status| status.is_connected())
-                .map(|status| status.url().to_string())
-                .collect();
+            let urls = connected_home_relay_urls(
+                statuses
+                    .into_iter()
+                    .map(|status| (status.is_connected(), status.url().to_string())),
+            );
             cb.call(Ok(urls), ThreadsafeFunctionCallMode::NonBlocking);
         }
     });
@@ -115,4 +122,27 @@ pub(crate) fn spawn_path_events_watch(
         }
     });
     WatchHandle::new(AbortOnDropHandle::new(task))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::connected_home_relay_urls;
+
+    #[test]
+    fn home_relay_output_contains_only_connected_statuses() {
+        let statuses = [
+            (false, "https://disconnected.example".to_owned()),
+            (true, "https://connected-one.example".to_owned()),
+            (false, "https://failed.example".to_owned()),
+            (true, "https://connected-two.example".to_owned()),
+        ];
+
+        assert_eq!(
+            connected_home_relay_urls(statuses),
+            vec![
+                "https://connected-one.example".to_owned(),
+                "https://connected-two.example".to_owned(),
+            ]
+        );
+    }
 }

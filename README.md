@@ -13,7 +13,7 @@ This repo defines Python, Swift, Kotlin and Node.js bindings for [iroh](https://
 - [Swift: SwiftPM](https://swiftpackageindex.com/n0-computer/iroh-ffi)
 - [Swift: Cocoapods](https://cocoapods.org/pods/IrohLib) — `IrohLib`
 - [Kotlin / JVM: Maven Central](https://central.sonatype.com/artifact/computer.iroh/iroh) — `computer.iroh:iroh`
-- [JavaScript: npm](https://www.npmjs.com/package/@number0/iroh) — `@number0/iroh`
+- [JavaScript: npm](https://www.npmjs.com/package/@hansjm10/volt-iroh) — `@hansjm10/volt-iroh` (Volt-owned distribution)
 - [Go](https://git.coopcloud.tech/decentral1se/iroh-go) (*Community maintained*)
 
 ## Documentation

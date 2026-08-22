@@ -103,6 +103,13 @@ node_modules
 *.node
 package-lock.json
 
+# npm release staging copies the repository's dual-license texts into each
+# package immediately before validation/publication.
+/iroh-js/LICENSE-APACHE
+/iroh-js/LICENSE-MIT
+/iroh-js/npm/*/LICENSE-APACHE
+/iroh-js/npm/*/LICENSE-MIT
+
 
 # Kotlin
 
