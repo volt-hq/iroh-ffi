@@ -145,8 +145,17 @@ done
 
 On npmjs.com, open each package's **Settings → Publishing access**, select
 **Require two-factor authentication and disallow tokens**, and save. No GitHub
-environment name is configured. In GitHub, confirm Actions are enabled for
-`volt-hq/iroh-ffi`, GitHub-hosted `ubuntu-latest` jobs are allowed, and the
+environment name is configured.
+
+The fork currently has `ci_js.yml` disabled manually. Enable only that workflow,
+then run its non-publishing branch validation once:
+
+```sh
+gh workflow enable ci_js.yml --repo volt-hq/iroh-ffi
+gh workflow run ci_js.yml --repo volt-hq/iroh-ffi --ref volt/owned-iroh
+```
+
+In GitHub, also confirm GitHub-hosted `ubuntu-latest` jobs are allowed and the
 existing self-hosted macOS ARM64/Linux X64 runners are available for the build
 matrix. Do not add `NPM_TOKEN` or any npm secret; `ci_js.yml` grants
 `id-token: write` only to the tag-gated publish job.
