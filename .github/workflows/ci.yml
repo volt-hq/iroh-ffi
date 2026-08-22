@@ -35,13 +35,16 @@ jobs:
           - name: windows-latest
             runner: [windows-latest]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
           submodules: recursive
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
         with:
+          toolchain: 1.97.1
           components: rustfmt, clippy
-      - uses: davidB/rust-cargo-make@v1
+      - uses: davidB/rust-cargo-make@eb4338cc4e8145107109b722ee749f23e61455f0 # v1.12.0
+        with:
+          version: 0.37.24
       - name: cargo make test-rust
         run: cargo make test-rust
 
@@ -50,11 +53,14 @@ jobs:
     name: fmt + clippy + docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
         with:
+          toolchain: 1.97.1
           components: rustfmt, clippy
-      - uses: davidB/rust-cargo-make@v1
+      - uses: davidB/rust-cargo-make@eb4338cc4e8145107109b722ee749f23e61455f0 # v1.12.0
+        with:
+          version: 0.37.24
       - run: cargo make format-check
       - run: cargo make clippy
       - run: cargo make docs

@@ -3,7 +3,7 @@
 This fork publishes only the Node.js/N-API distribution under Volt-controlled
 npm names. It preserves the upstream JavaScript API, native binary name
 (`iroh`), Rust crate/module names, repository history, attribution, and the
-MIT/Apache-2.0 license choice.
+MIT/Apache-2.0 dual-license choice.
 
 ## Initial owned version and lineage
 
@@ -38,133 +38,146 @@ packages are:
 - `@hansjm10/volt-iroh-win32-x64-msvc`
 - `@hansjm10/volt-iroh-win32-arm64-msvc`
 
-`napi pre-publish` writes the root package's exact `optionalDependencies` and
-publishes the native packages before npm publishes the root package. Source
-`package.json` intentionally omits those unpublished dependencies so branch CI
-can install before a version exists in the registry.
+Source `package.json` intentionally omits unpublished optional dependencies so
+branch CI can install before a version exists in the registry. In release CI,
+`napi pre-publish --skip-optional-publish` stages exact optional dependencies
+and platform metadata without publishing. Verification then packs all 12
+packages with lifecycle scripts disabled. npm receives exactly those immutable,
+hash-verified tarballs, platform packages first and the root package last.
+Every `npm publish` uses OIDC provenance.
 
-## Prepare and release a version
+## Required GitHub controls (not encoded by this repository)
+
+Keep `.github/workflows/ci_js.yml` disabled until all controls below exist.
+The workflow itself has no PR/manual trigger and authorizes the ref on a
+GitHub-hosted runner before repository code reaches a self-hosted runner.
+
+1. Protect `volt/owned-iroh`: restrict direct pushes to designated release
+   maintainers, require signed commits, block force-pushes and deletion, and do
+   not permit administrators to bypass the rule for releases.
+2. Add a tag ruleset for `npm-v*`: restrict creation to designated release
+   maintainers and block updates and deletion. Do not allow ruleset bypass.
+3. Create environment `npm-release`. Configure at least one required reviewer
+   who is not the tag creator, prevent self-review, and restrict deployments to
+   protected tags matching only `npm-v*` from this repository.
+4. Do not add repository/environment `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or other
+   npm credentials. The publish job alone has `id-token: write`.
+5. Keep the existing self-hosted macOS ARM64 and Linux X64 runners restricted
+   to this private trusted workflow/repository. GitHub-hosted Windows and Ubuntu
+   jobs must also be allowed.
+
+The exact release-ref policy is fail-closed:
+
+- the event must be a push in `volt-hq/iroh-ffi`;
+- a branch run must be the current `origin/volt/owned-iroh` head;
+- a release ref must be an annotated `npm-v<package-version>` tag;
+- the tag must point to exactly the current protected branch head; and
+- GitHub's Git tag API must report the annotated tag signature as `verified`
+  with reason `valid` and a direct commit target.
+
+Use `git tag -s -a`; configure Git for a GitHub-verified GPG, SSH, or S/MIME
+signing identity before tagging. Lightweight, unsigned, stale, side-branch, and
+unverified signed tags are rejected before the build matrix.
+
+`release-targets.json` is the trusted 11-target matrix. It pins Node, Rust,
+Yarn, Zig/Python, NDK, actions, and test-container digests. Inputs that cannot
+be made repository-immutable are explicitly recorded there: protected
+self-hosted runner images, Xcode/Apple SDKs, GitHub-hosted runner images, and
+Linux distribution cross-compiler packages. Each native artifact manifest
+records the runner/tool versions and resolved distribution package versions.
+Publication fails unless every downloaded manifest matches that trusted matrix.
+
+## One-time npm publisher bootstrap
+
+Complete the GitHub branch/tag/environment controls first. npm bootstrap is
+then an interactive owner operation from a clean checkout. It requires account
+2FA and exactly npm `11.17.0`; never use a version range.
+
+```bash
+set -euo pipefail
+cd /Volumes/External/Projects/volt-workspace/iroh-ffi
+npm install --global npm@11.17.0
+test "$(npm --version)" = 11.17.0
+npm login
+./iroh-js/scripts/bootstrap-owned-npm.sh
+```
+
+The script fails on registry/network ambiguity and on any unexpected existing
+package. For each package it creates or verifies only
+`0.0.0-bootstrap.0` under only the `bootstrap` dist-tag, then verifies exact
+owner/maintainer, repository, license, and downloaded tarball content. It binds
+the trusted publisher to all of:
+
+- repository `volt-hq/iroh-ffi`;
+- workflow `ci_js.yml`;
+- environment `npm-release`; and
+- publish permission.
+
+It verifies `npm trust list`, applies `npm access set mfa=publish`, removes all
+staging, and logs out. npm logout revokes the bootstrap session credential; a
+logout failure makes the script fail. The script never stores a token in the
+repository.
+
+After it succeeds, inspect all 12 package settings on npmjs.com and confirm:
+
+- owner and sole maintainer are the expected `hansjm10` account;
+- only bootstrap version/tag/content exist before the first real release;
+- the trusted publisher shows the exact repository/workflow/environment above;
+- publishing access says **Require two-factor authentication and disallow
+  tokens**; and
+- `npm trust list <package>` shows no additional publisher.
+
+Any discrepancy is a stop condition. Revoke the bootstrap session manually if
+logout reported failure.
+
+## Prepare and validate a release
 
 From the repository root:
 
-```sh
+```bash
 cargo make prepare-owned-npm-release 1.1.1-volt.1
 cargo make test-js
 ```
 
 The preparation task changes only the owned JS/N-API version, updates the JS
-lockfile/generated loader, validates all platform metadata, and builds the host
-addon. Commit and push the result to `volt/owned-iroh`.
+lockfile/generated loader, enforces fatal native-package version checks,
+validates platform metadata, and builds the host addon. Commit and push the
+result directly to the protected `volt/owned-iroh` branch under the branch
+policy above.
 
-A branch push or manual dispatch builds/tests but cannot publish. Publication is
-isolated to an exact `npm-v<VERSION>` tag, which intentionally does not match
-the fork's cross-language `v*` release workflows:
+After GitHub/npm controls and bootstrap are verified, enable only
+`ci_js.yml`. It has no manual-dispatch path. The next trusted direct branch push
+must complete the entire non-publishing matrix successfully before tagging.
+Do not treat local tests as cross-platform CI.
 
-```sh
-git tag -a npm-v1.1.1-volt.1 -m "npm: @hansjm10/volt-iroh@1.1.1-volt.1"
-git push origin npm-v1.1.1-volt.1
+## Tag and publish
+
+Create an annotated signed tag at the exact protected branch head:
+
+```bash
+set -euo pipefail
+git fetch origin volt/owned-iroh
+branch_head=$(git rev-parse origin/volt/owned-iroh)
+test "$(git rev-parse HEAD)" = "$branch_head"
+git tag -s -a npm-v1.1.1-volt.1 "$branch_head" \
+  -m "npm: @hansjm10/volt-iroh@1.1.1-volt.1"
+git verify-tag npm-v1.1.1-volt.1
+git push origin refs/tags/npm-v1.1.1-volt.1
 ```
 
-Do not create a `v*` tag for an owned npm release. The publish job runs on a
-GitHub-hosted runner, verifies all 11 native artifacts and package manifests,
-stages both license texts, checks that the tag exactly matches `package.json`,
-and then uses npm trusted publishing (OIDC) with provenance. No npm token or
-GitHub secret is required.
+Do not create a `v*` tag for an owned npm release. The environment approval is
+required before the GitHub-hosted publish job starts. The job verifies native
+SHA-256 manifests, binary format/architecture, package OS/CPU/libc metadata,
+dual-license texts, exact staged dependencies, and all 12 immutable tarballs.
+It publishes only those tarballs, with scripts disabled and provenance enabled
+for every package.
 
-## One-time publisher bootstrap
+After publication, verify registry metadata and provenance before consumption:
 
-npm requires a package to exist before trusted publishing can be configured.
-Jordan must perform this once while logged in to the `hansjm10` npm account
-with account-level 2FA. The placeholder version reserves each name under the
-non-default `bootstrap` tag; it is not a usable Iroh release.
-
-```sh
-cd /Volumes/External/Projects/volt-workspace/iroh-ffi
-npm install --global 'npm@^11.15.0'
-npm login
-
-packages=(
-  @hansjm10/volt-iroh
-  @hansjm10/volt-iroh-darwin-arm64
-  @hansjm10/volt-iroh-android-arm64
-  @hansjm10/volt-iroh-android-arm-eabi
-  @hansjm10/volt-iroh-linux-x64-gnu
-  @hansjm10/volt-iroh-linux-x64-musl
-  @hansjm10/volt-iroh-linux-arm64-gnu
-  @hansjm10/volt-iroh-linux-arm64-musl
-  @hansjm10/volt-iroh-linux-arm-gnueabihf
-  @hansjm10/volt-iroh-linux-arm-musleabihf
-  @hansjm10/volt-iroh-win32-x64-msvc
-  @hansjm10/volt-iroh-win32-arm64-msvc
-)
-
-bootstrap=$(mktemp -d)
-for package in "${packages[@]}"; do
-  if npm view "$package" name >/dev/null 2>&1; then
-    echo "already exists: $package"
-    continue
-  fi
-  dir="$bootstrap/${package##*/}"
-  mkdir -p "$dir"
-  cp LICENSE-APACHE LICENSE-MIT "$dir/"
-  PKG="$package" node - "$dir/package.json" <<'NODE'
-const fs = require('node:fs')
-const path = process.argv[2]
-fs.writeFileSync(path, JSON.stringify({
-  name: process.env.PKG,
-  version: '0.0.0-bootstrap.0',
-  description: 'Reserved for the Volt-owned Iroh N-API distribution',
-  repository: {
-    type: 'git',
-    url: 'https://github.com/volt-hq/iroh-ffi.git',
-  },
-  license: 'MIT OR Apache-2.0',
-  publishConfig: { access: 'public' },
-}, null, 2) + '\n')
-NODE
-  printf '# `%s`\n\nReserved for Volt-owned Iroh releases.\n' "$package" > "$dir/README.md"
-  (cd "$dir" && npm publish --access public --tag bootstrap)
-done
-rm -rf "$bootstrap"
-```
-
-Then configure this exact trusted publisher for all 12 packages. `npm trust`
-requires npm 11.15+, package write access, and an interactive account session
-with 2FA:
-
-```sh
-for package in "${packages[@]}"; do
-  npm trust github "$package" \
-    --repo volt-hq/iroh-ffi \
-    --file ci_js.yml \
-    --allow-publish \
-    --yes
-  sleep 2
-done
-```
-
-On npmjs.com, open each package's **Settings → Publishing access**, select
-**Require two-factor authentication and disallow tokens**, and save. No GitHub
-environment name is configured.
-
-The fork currently has `ci_js.yml` disabled manually. Enable only that workflow,
-then run its non-publishing branch validation once:
-
-```sh
-gh workflow enable ci_js.yml --repo volt-hq/iroh-ffi
-gh workflow run ci_js.yml --repo volt-hq/iroh-ffi --ref volt/owned-iroh
-```
-
-In GitHub, also confirm GitHub-hosted `ubuntu-latest` jobs are allowed and the
-existing self-hosted macOS ARM64/Linux X64 runners are available for the build
-matrix. Do not add `NPM_TOKEN` or any npm secret; `ci_js.yml` grants
-`id-token: write` only to the tag-gated publish job.
-
-After publication, verify the immutable release before consumption:
-
-```sh
+```bash
 npm view @hansjm10/volt-iroh@1.1.1-volt.1 --json \
-  name version dist-tags optionalDependencies repository
+  name version dist-tags optionalDependencies repository license
 npm view @hansjm10/volt-iroh-darwin-arm64@1.1.1-volt.1 --json \
-  name version os cpu repository
+  name version os cpu libc repository license
+npm trust list @hansjm10/volt-iroh
 ```

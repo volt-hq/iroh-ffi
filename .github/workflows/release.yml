@@ -46,7 +46,7 @@ jobs:
         echo "version is: ${GITHUB_REF#refs/tags/}"
     - name: Promote draft release (or create fresh)
       if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v3
+      uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.3
       with:
         tag_name: ${{ env.RELEASE_VERSION }}
         name: ${{ env.RELEASE_VERSION }}
@@ -59,7 +59,7 @@ jobs:
     strategy:
       matrix:
         name: [ubuntu-latest, ubuntu-arm-latest, macOS-arm-latest, windows-latest]
-        rust: [stable]
+        rust: [1.97.1]
         include:
           - name: ubuntu-arm-latest
             os: ubuntu-latest
@@ -84,13 +84,13 @@ jobs:
             runner: [windows-latest]
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
       with:
         fetch-depth: 1
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
       with:
-        toolchain: ${{ matrix.rust }}
+        toolchain: 1.97.1
         targets: ${{matrix.cargo_target}}
     - name: Ensure musl support
       if: ${{ contains(matrix.cargo_target, '-musl') }}
@@ -121,7 +121,7 @@ jobs:
         fi
     - name: Upload release archive
       if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v3
+      uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.3
       with:
         tag_name: ${{ needs.create-release.outputs.release_version }}
         files: ${{ env.ASSET }}
@@ -163,13 +163,14 @@ jobs:
             target: x86_64-pc-windows-msvc
             lib_file: iroh_ffi.dll
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
         with:
+          toolchain: 1.97.1
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
       - run: cargo build --release --lib -p iroh-ffi --target ${{ matrix.target }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: kotlin-cdylib-${{ matrix.name }}
           path: target/${{ matrix.target }}/release/${{ matrix.lib_file }}
@@ -189,21 +190,22 @@ jobs:
     timeout-minutes: 60
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
         with:
+          toolchain: 1.97.1
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-java@v5
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.0.0
         with:
           distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v3
+          java-version: "17.0.16+8"
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
       - name: Setup Android NDK
-        uses: arqu/setup-ndk@main
+        uses: arqu/setup-ndk@4f8a02c22e2c17ff9ebba9026e599da847aa8374
         id: setup-ndk
         with:
-          ndk-version: r23
+          ndk-version: r23c
           add-to-path: true
       - name: Cross-build Android cdylibs
         env:
@@ -214,7 +216,7 @@ jobs:
             -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
             build --release --lib -p iroh-ffi
           find ./android-jniLibs -type f
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: kotlin-android-jniLibs
           path: android-jniLibs/
@@ -236,15 +238,19 @@ jobs:
     # doesn't have KVM enabled.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
+      - uses: davidB/rust-cargo-make@eb4338cc4e8145107109b722ee749f23e61455f0 # v1.12.0
+        with:
+          version: 0.37.24
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.0.0
         with:
           distribution: temurin
-          java-version: "17"
-      - uses: actions/download-artifact@v4
+          java-version: "17.0.16+8"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: kotlin-android-jniLibs
           path: android-jniLibs/
@@ -261,7 +267,7 @@ jobs:
         # `script:` runs each line as a separate `sh -c`, so state across
         # lines is lost. Delegate to scripts/run_android_smoke.sh so cd +
         # variable assignment + gradlew live in one shell.
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.34.0
         with:
           api-level: 35
           arch: x86_64
@@ -277,28 +283,32 @@ jobs:
     needs: [create-release, build-kotlin-cdylib, build-kotlin-android, verify-kotlin-android-consumer]
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
+      - uses: davidB/rust-cargo-make@eb4338cc4e8145107109b722ee749f23e61455f0 # v1.12.0
+        with:
+          version: 0.37.24
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.0.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "17.0.16+8"
       # AGP requires the Android SDK at gradle-configure time; the :android
       # subproject in kotlin/ root configures even when only :lib is being
       # built. Same reason setup-android shows up in ci_kotlin.yml jobs.
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
       # Generate `iroh_ffi.kt` from the local debug cdylib. We discard the
       # flat resources/libiroh_ffi.so it also copies, because we're shipping
       # the per-platform release builds under jna-platform/ dirs instead.
       - name: Generate Kotlin bindings
         run: cargo make bindgen-kotlin
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: kotlin-cdylib-*
           path: cdylibs/
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: kotlin-android-jniLibs
           path: android-jniLibs/

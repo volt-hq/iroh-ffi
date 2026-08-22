@@ -113,33 +113,30 @@ args = ["build", "--release", "--manylinux", "2_28"]
 # ---------------------------------------------------------------------------
 
 [tasks.js-install]
-description = "yarn install for iroh-js."
-command = "yarn"
-args = ["install"]
+description = "Install the exact Yarn-locked iroh-js dependencies."
+command = "node"
+args = [".yarn/releases/yarn-4.4.0.cjs", "install", "--immutable"]
 cwd = "iroh-js"
 
 [tasks.js-build]
-description = "Build the napi addon (platform-tagged debug)."
+description = "Build the napi addon (platform-tagged debug) and enforce fail-closed native versions."
 dependencies = ["js-install"]
-script_runner = "@shell"
-script = '''
-set -eu
-cd iroh-js
-node_modules/.bin/napi build --platform
-'''
+command = "node"
+args = [".yarn/releases/yarn-4.4.0.cjs", "build:debug"]
+cwd = "iroh-js"
 
 [tasks.test-js]
 description = "Build + run the JS test suite."
 dependencies = ["js-build"]
-command = "yarn"
-args = ["test"]
+command = "node"
+args = [".yarn/releases/yarn-4.4.0.cjs", "test"]
 cwd = "iroh-js"
 
 [tasks.js-build-release]
 description = "Build the napi addon (release, stripped)."
 dependencies = ["js-install"]
-command = "yarn"
-args = ["build"]
+command = "node"
+args = [".yarn/releases/yarn-4.4.0.cjs", "build"]
 cwd = "iroh-js"
 
 # ---------------------------------------------------------------------------
@@ -337,7 +334,6 @@ echo "  wheel: $WHEEL"
 
 VENV=$(mktemp -d)/v
 python3 -m venv "$VENV"
-"$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install --quiet "$WHEEL"
 # Force-resolve the loaded module so `import` errors surface, then exercise a
 # native call that round-trips through the FFI boundary (SecretKey.generate
@@ -521,7 +517,7 @@ dependencies = ["python-develop"]
 script_runner = "@shell"
 script = '''
 set -eu
-python3 -m pip install --quiet --upgrade pdoc
+python3 -m pip install --quiet pdoc==16.0.0
 rm -rf site/python
 # `iroh/__init__.py` is just `from .iroh_ffi import *`; documenting the
 # `iroh` package makes pdoc choke on the trivial `__init__.pyi` re-export
@@ -538,7 +534,7 @@ script_runner = "@shell"
 script = '''
 set -eu
 cd iroh-js
-yarn docs
+node .yarn/releases/yarn-4.4.0.cjs docs
 echo "js docs -> site/js"
 '''
 
@@ -562,7 +558,7 @@ description = "Render the docs landing page from support-matrix.yaml."
 script_runner = "@shell"
 script = '''
 set -eu
-python3 -m pip install --quiet --upgrade pyyaml
+python3 -m pip install --quiet pyyaml==6.0.3
 python3 scripts/docs/gen_landing.py
 '''
 
@@ -627,14 +623,14 @@ echo "  ok (sha256=$H1, ships from CI not from here)"
 echo "==> python: maturin build + wheel consumer smoke"
 PYVENV=$(mktemp -d)/venv
 python3 -m venv "$PYVENV"
-"$PYVENV/bin/pip" install --quiet --upgrade maturin uniffi-bindgen
+"$PYVENV/bin/pip" install --quiet maturin==1.14.1 uniffi-bindgen==0.31.0
 WHEELS=$(mktemp -d)
 "$PYVENV/bin/maturin" build --release --quiet --out "$WHEELS"
 ls "$WHEELS"/*.whl
 IROH_WHEEL_DIR="$WHEELS" cargo make verify-python-wheel >/dev/null
 
 echo "==> js: napi build + consumer smoke (loads .node, exercises SecretKey)"
-( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
+( cd iroh-js && node .yarn/releases/yarn-4.4.0.cjs install --immutable && node .yarn/releases/yarn-4.4.0.cjs build >/dev/null && npm publish --ignore-scripts --dry-run 2>&1 | tail -8 )
 cargo make verify-js-package >/dev/null
 
 echo "==> kotlin: gradle publishToMavenLocal (signed)"
@@ -676,9 +672,9 @@ set -eu
 VERSION="${1:?usage: cargo make prepare-owned-npm-release <VERSION> (no leading v)}"
 
 python3 scripts/release/bump_owned_npm_version.py "$VERSION"
-( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
+( cd iroh-js && node .yarn/releases/yarn-4.4.0.cjs install --mode update-lockfile >/dev/null )
 cargo make js-build >/dev/null
-( cd iroh-js && yarn verify:metadata )
+( cd iroh-js && node .yarn/releases/yarn-4.4.0.cjs verify:metadata )
 
 cat <<EOF
 
@@ -703,7 +699,7 @@ echo "==> refresh Cargo.lock"
 cargo update -p iroh-ffi --precise "$VERSION" >/dev/null
 
 echo "==> refresh iroh-js/yarn.lock"
-( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
+( cd iroh-js && node .yarn/releases/yarn-4.4.0.cjs install --mode update-lockfile >/dev/null )
 
 # `napi build` regenerates iroh-js/index.js with the package name and new version baked into
 # every `bindingPackageVersion !== '<V>'` check + error message. Without this
@@ -741,13 +737,12 @@ command = "maturin"
 args = ["publish", "--skip-existing"]
 
 [tasks.publish-js]
-description = "Publish the npm package (napi prepublish + npm publish)."
-cwd = "iroh-js"
+description = "Disabled: owned npm publication is restricted to the protected ci_js.yml workflow."
 script_runner = "@shell"
 script = '''
 set -eu
-node_modules/.bin/napi pre-publish -t npm --no-gh-release
-npm publish --access public
+echo "ERROR: local JS publication is disabled; use the protected npm-v* workflow" >&2
+exit 1
 '''
 
 [tasks.publish-swift]

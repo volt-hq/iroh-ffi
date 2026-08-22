@@ -3,15 +3,19 @@
 # This script will build a manylinux_2_28 wheel if used in the
 # manylinux_2_28_x86_64 container:
 #
-# docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux_2_28_x86_64 /mnt/build_wheel.sh
+# The image must be pinned by digest, as in .github/workflows/wheels.yml.
+# This helper intentionally does not curl a mutable toolchain installer.
 
-# Install rust
-curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-source $HOME/.cargo/env
+command -v rustup >/dev/null 2>&1 || {
+    echo "ERROR: install rustup through a reviewed, pinned mechanism first" >&2
+    exit 1
+}
+rustup toolchain install 1.97.1 --profile minimal
+rustup default 1.97.1
 
 # Build the wheels, we only need to build one
 for PYBIN in /opt/python/cp311-*/bin; do
-    "${PYBIN}/pip" install maturin uniffi-bindgen
+    "${PYBIN}/pip" install maturin==1.14.1 uniffi-bindgen==0.31.0
     "${PYBIN}/maturin" build --release --manylinux 2_28
 done
 
@@ -20,7 +24,7 @@ PATH=/opt/python/cp311-cp311/bin:$PATH
 export PATH
 
 # Install our build tools
-pip install maturin uniffi-bindgen
+pip install maturin==1.14.1 uniffi-bindgen==0.31.0
 
 # Build the wheel
 maturin build --release --manylinux 2_28

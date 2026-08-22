@@ -101,7 +101,12 @@ python/iroh-data
 # Node
 node_modules
 *.node
+*.tgz
 package-lock.json
+/iroh-js/artifacts/
+/iroh-js/release-tarballs/
+/iroh-js/native-artifact-*.json
+/iroh-js/native-artifact-*.sha256
 
 # npm release staging copies the repository's dual-license texts into each
 # package immediately before validation/publication.

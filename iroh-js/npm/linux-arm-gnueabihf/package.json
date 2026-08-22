@@ -18,7 +18,14 @@
     "url": "https://github.com/volt-hq/iroh-ffi.git"
   },
   "license": "MIT OR Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "engines": {
     "node": ">= 10"
-  }
+  },
+  "libc": [
+    "glibc"
+  ]
 }

@@ -12,481 +12,347 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
+# SECURITY: this workflow executes repository code on persistent self-hosted
+# runners. It therefore accepts only trusted direct pushes to the protected
+# owned branch and protected npm release tags. Do not add pull_request,
+# workflow_dispatch, pull_request_target, or arbitrary-ref inputs.
 on:
-  workflow_dispatch:
   push:
     branches:
-      - main
       - volt/owned-iroh
     # Deliberately does not match the fork's cross-language v* release jobs.
     tags:
       - "npm-v*"
-    paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - '**/*.gitignore'
-      - .editorconfig
-      - docs/**
-  pull_request:
 
 jobs:
+  authorize-ref:
+    name: Authorize trusted branch or signed release tag
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.authorize.outputs.is_release }}
+      authorized_sha: ${{ steps.authorize.outputs.authorized_sha }}
+      build_matrix: ${{ steps.authorize.outputs.build_matrix }}
+    steps:
+      # Always load the authorization code/matrix from the protected branch,
+      # never from the event tag being evaluated.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          ref: refs/heads/volt/owned-iroh
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: 24.9.0
+          package-manager-cache: false
+      - id: authorize
+        name: Verify protected ref and trusted build matrix
+        run: node iroh-js/scripts/authorize-release-ref.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
   # Native-arch smoke test: build the host .node via cargo-make (`napi build
   # --platform`) and run the JS test suite. Sanity-checks that local dev
   # (`cargo make test-js`) and the bindings stay in sync, independently of
   # the napi multi-target cross-build matrix below.
   native-test:
     name: JS - Native test (macOS-arm64)
+    needs: authorize-ref
     timeout-minutes: 30
     runs-on: [self-hosted, macOS, ARM64]
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
-          node-version: 24
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: 24.9.0
+          package-manager-cache: false
+      - name: Install exact cargo-make
+        run: cargo install --locked --version 0.37.24 cargo-make
       - name: cargo make test-js
         run: cargo make test-js
 
   build:
+    needs: authorize-ref
     strategy:
       fail-fast: false
       matrix:
-        settings:
-          - host: '["windows-latest"]'
-            build: yarn build
-            target: x86_64-pc-windows-msvc
-          - host: '["self-hosted","linux","X64"]'
-            target: x86_64-unknown-linux-gnu
-            build: yarn build --target x86_64-unknown-linux-gnu
-          - host: '["self-hosted","linux","X64"]'
-            target: x86_64-unknown-linux-musl
-            setup: |
-              pip3 install ziglang
-            build: |-
-              set -e
-              mkdir -p "$HOME/zigshim"
-              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang cc -target x86_64-linux-musl $A\n' > "$HOME/zigshim/zcc"
-              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang c++ -target x86_64-linux-musl $A\n' > "$HOME/zigshim/zcxx"
-              chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
-              export CC_x86_64_unknown_linux_musl="$HOME/zigshim/zcc"
-              export CXX_x86_64_unknown_linux_musl="$HOME/zigshim/zcxx"
-              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER="$HOME/zigshim/zcc"
-              export TARGET_CC="$HOME/zigshim/zcc"
-              export TARGET_CXX="$HOME/zigshim/zcxx"
-              yarn build --target x86_64-unknown-linux-musl
-          - host: '["self-hosted","macOS","ARM64"]'
-            target: aarch64-apple-darwin
-            build: yarn build --target aarch64-apple-darwin
-          - host: '["self-hosted","linux","X64"]'
-            target: aarch64-unknown-linux-gnu
-            setup: |
-              sudo apt-get update
-              sudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-            build: |-
-              set -e &&
-              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc &&
-              export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ &&
-              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc &&
-              yarn build --target aarch64-unknown-linux-gnu --use-napi-cross
-          - host: '["self-hosted","linux","X64"]'
-            target: armv7-unknown-linux-gnueabihf
-            setup: |
-              sudo apt-get update
-              sudo apt-get install gcc-arm-linux-gnueabihf -y
-            build: yarn build --target armv7-unknown-linux-gnueabihf --use-napi-cross
-          - host: '["self-hosted","linux","X64"]'
-            target: armv7-unknown-linux-musleabihf
-            setup: |
-              sudo apt-get update
-              sudo apt-get -y install binutils-arm-linux-gnueabihf gcc-arm-linux-gnueabihf musl-tools musl-dev
-            build: yarn build --target armv7-unknown-linux-musleabihf --use-napi-cross
-          - host: '["self-hosted","linux","X64"]'
-            target: aarch64-linux-android
-            build: yarn build --target aarch64-linux-android
-          - host: '["self-hosted","linux","X64"]'
-            target: armv7-linux-androideabi
-            build: yarn build --target armv7-linux-androideabi
-          - host: '["self-hosted","linux","X64"]'
-            target: aarch64-unknown-linux-musl
-            setup: |
-              pip3 install ziglang
-            build: |-
-              set -e
-              mkdir -p "$HOME/zigshim"
-              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang cc -target aarch64-linux-musl $A\n' > "$HOME/zigshim/zcc"
-              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang c++ -target aarch64-linux-musl $A\n' > "$HOME/zigshim/zcxx"
-              chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
-              export CC_aarch64_unknown_linux_musl="$HOME/zigshim/zcc"
-              export CXX_aarch64_unknown_linux_musl="$HOME/zigshim/zcxx"
-              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER="$HOME/zigshim/zcc"
-              export TARGET_CC="$HOME/zigshim/zcc"
-              export TARGET_CXX="$HOME/zigshim/zcxx"
-              yarn build --target aarch64-unknown-linux-musl
-          - host: '["windows-latest"]'
-            target: aarch64-pc-windows-msvc
-            build: yarn build --target aarch64-pc-windows-msvc
-    name: stable - ${{ matrix.settings.target }} - node@24
+        settings: ${{ fromJSON(needs.authorize-ref.outputs.build_matrix) }}
+    name: ${{ matrix.settings.target }} - node@24.9.0 - rust@1.97.1
     runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        uses: actions/setup-node@v6
-        if: ${{ !matrix.settings.docker }}
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
-          node-version: 24
-      - name: Enable corepack (yarn)
-        if: ${{ !matrix.settings.docker }}
-        run: npm install -g corepack --force && corepack enable
-        shell: bash
-      - name: Install
-        uses: dtolnay/rust-toolchain@stable
-        if: ${{ !matrix.settings.docker }}
+          persist-credentials: false
+      - name: Setup exact Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
-          toolchain: stable
+          node-version: 24.9.0
+          package-manager-cache: false
+      - name: Setup exact Rust toolchain
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.97.1
           targets: ${{ matrix.settings.target }}
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
         with:
           key: ${{ matrix.settings.target }}
-      - uses: goto-bus-stop/setup-zig@v2
+      - uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
         if: ${{ matrix.settings.target == 'armv7-unknown-linux-gnueabihf' || matrix.settings.target == 'armv7-unknown-linux-musleabihf' }}
         with:
           version: 0.11.0
-      - name: Setup toolchain
+      - name: Setup recorded cross toolchain inputs
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
-      - name: Setup Android NDK
+      - name: Setup exact Android NDK
         if: ${{ contains(matrix.settings.target, 'android') }}
-        uses: arqu/setup-ndk@main
+        uses: arqu/setup-ndk@4f8a02c22e2c17ff9ebba9026e599da847aa8374
         id: setup-ndk
         with:
-          ndk-version: r23
+          ndk-version: r23c
           add-to-path: true
-      - name: Setup node x86
-        if: matrix.settings.target == 'i686-pc-windows-msvc'
-        run: yarn config set supportedArchitectures.cpu "ia32"
-        shell: bash
-      - name: Install dependencies
-        run: yarn install
-      - name: Setup node x86
-        uses: actions/setup-node@v6
-        if: matrix.settings.target == 'i686-pc-windows-msvc'
-        with:
-          node-version: 24
-          architecture: x86
-      - name: Build in docker
-        uses: addnab/docker-run-action@v3
-        if: ${{ matrix.settings.docker }}
-        with:
-          image: ${{ matrix.settings.docker }}
-          options: '--user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build'
-          run: ${{ matrix.settings.build }}
+      - name: Install dependencies from the immutable Yarn lock
+        run: node .yarn/releases/yarn-4.4.0.cjs install --immutable
       - name: Build
         run: ${{ matrix.settings.build }}
-        if: ${{ !matrix.settings.docker }}
         shell: bash
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Inspect binary and create native SHA-256 manifest
+        run: node scripts/create-native-manifest.mjs "${{ matrix.settings.target }}"
+      - name: Upload artifact and reviewed build-input record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: iroh-js/${{ env.APP_NAME }}.*.node
+          path: |
+            iroh-js/${{ env.APP_NAME }}.*.node
+            iroh-js/native-artifact-${{ matrix.settings.target }}.json
+            iroh-js/native-artifact-${{ matrix.settings.target }}.sha256
           if-no-files-found: error
-          # Intra-run handoff only: the test-* jobs below download this in the
-          # same run. Defaulting to 90d retention accumulated ~9GB of dead
-          # per-PR binaries against the account's 2GB Actions storage quota.
           retention-days: 1
   test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
-    needs:
-      - build
+    needs: build
     strategy:
       fail-fast: false
       matrix:
         settings:
           - host: '["windows-latest"]'
             target: x86_64-pc-windows-msvc
-        node:
-          - '24'
-          - '26'
+        node: ['24.9.0', '26.4.0']
     runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Setup exact Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
           node-version: ${{ matrix.node }}
           architecture: x64
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
-        shell: bash
+          package-manager-cache: false
       - name: Install dependencies
-        run: yarn install
+        run: node .yarn/releases/yarn-4.4.0.cjs install --immutable
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: bindings-${{ matrix.settings.target }}
           path: iroh-js/
-      - name: List packages
-        run: ls -R .
-        shell: bash
       - name: Test bindings
-        run: yarn test
+        run: node .yarn/releases/yarn-4.4.0.cjs test
   test-linux-x64-gnu-binding:
     name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
-    needs:
-      - build
+    needs: build
     strategy:
       fail-fast: false
       matrix:
-        node:
-          - '24'
-          - '26'
+        include:
+          - node: 24.9.0
+            image: node:24.9.0-slim@sha256:3e69116c924bfcba6c6979aff60d966c37aef56d488ce091c69d442ebec9f103
+          - node: 26.4.0
+            image: node:26.4.0-slim@sha256:a1d9d671994fc2d26e297ac56b4b1522a8bc7fa71c43b14cd1b1fe6c5116f7dc
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Setup exact Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
           node-version: ${{ matrix.node }}
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
-        shell: bash
+          package-manager-cache: false
       - name: Install dependencies
-        run: yarn install
+        run: node .yarn/releases/yarn-4.4.0.cjs install --immutable
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: bindings-x86_64-unknown-linux-gnu
           path: iroh-js/
-      - name: List packages
-        run: ls -R .
-        shell: bash
-      - name: Test bindings
-        # Force amd64: the self-hosted runner also services arm64 binding-test
-        # jobs, so `node:N-slim` in the Docker image cache may be the arm64
-        # variant of the multi-arch manifest. Without --platform, Docker
-        # reuses whichever variant is cached and `process.arch` reports arm64,
-        # so napi loads the wrong native binding.
-        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-slim sh -c "npm install -g corepack --force && corepack enable && yarn test"
+      - name: Test bindings in immutable amd64 container
+        run: docker run --rm --platform linux/amd64 -v "$(pwd):/build" -w /build "${{ matrix.image }}" node .yarn/releases/yarn-4.4.0.cjs test
+
   test-linux-x64-musl-binding:
     name: Test bindings on x86_64-unknown-linux-musl - node@${{ matrix.node }}
-    needs:
-      - build
+    needs: build
     strategy:
       fail-fast: false
       matrix:
-        node:
-          - '24'
-          - '26'
+        include:
+          - node: 24.9.0
+            image: node:24.9.0-alpine@sha256:b0d33ed19a912e1a18ceb83e139815233cd49c123fe025e67a7c506c93e3f728
+          - node: 26.4.0
+            image: node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Setup exact Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
           node-version: ${{ matrix.node }}
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
-        shell: bash
+          package-manager-cache: false
       - name: Install dependencies
         run: |
-          yarn config set supportedArchitectures.libc "musl"
-          yarn install
+          node .yarn/releases/yarn-4.4.0.cjs config set supportedArchitectures.libc "musl"
+          node .yarn/releases/yarn-4.4.0.cjs install --immutable
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: bindings-x86_64-unknown-linux-musl
           path: iroh-js/
-      - name: List packages
-        run: ls -R .
-        shell: bash
-      - name: Test bindings
-        # Force amd64 for the same reason as the gnu variant above.
-        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine sh -c "npm install -g corepack --force && corepack enable && yarn test"
+      - name: Test bindings in immutable amd64 container
+        run: docker run --rm --platform linux/amd64 -v "$(pwd):/build" -w /build "${{ matrix.image }}" node .yarn/releases/yarn-4.4.0.cjs test
   test-linux-aarch64-gnu-binding:
     name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
-    needs:
-      - build
+    needs: build
     strategy:
       fail-fast: false
       matrix:
-        node:
-          - '24'
-          - '26'
+        include:
+          - node: 24.9.0
+            image: node:24.9.0-slim@sha256:3e69116c924bfcba6c6979aff60d966c37aef56d488ce091c69d442ebec9f103
+          - node: 26.4.0
+            image: node:26.4.0-slim@sha256:a1d9d671994fc2d26e297ac56b4b1522a8bc7fa71c43b14cd1b1fe6c5116f7dc
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
           node-version: ${{ matrix.node }}
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
-        shell: bash
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
+          package-manager-cache: false
+      - name: Install dependencies
+        run: |
+          node .yarn/releases/yarn-4.4.0.cjs config set supportedArchitectures.cpu "arm64"
+          node .yarn/releases/yarn-4.4.0.cjs config set supportedArchitectures.libc "glibc"
+          node .yarn/releases/yarn-4.4.0.cjs install --immutable
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: bindings-aarch64-unknown-linux-gnu
           path: iroh-js/
-      - name: List packages
-        run: ls -R .
-        shell: bash
-      - name: Install dependencies
-        run: |
-          yarn config set supportedArchitectures.cpu "arm64"
-          yarn config set supportedArchitectures.libc "glibc"
-          yarn install
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         with:
           platforms: arm64
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - name: Setup and run tests
-        uses: addnab/docker-run-action@v3
-        with:
-          image: node:${{ matrix.node }}-slim
-          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
-          run: |
-            set -e
-            npm install -g corepack --force
-            corepack enable
-            yarn test
-            ls -la
+      - name: Test in immutable arm64 container
+        run: docker run --rm --platform linux/arm64 -v "${{ github.workspace }}/iroh-js:/build" -w /build "${{ matrix.image }}" node .yarn/releases/yarn-4.4.0.cjs test
+
   test-linux-aarch64-musl-binding:
     name: Test bindings on aarch64-unknown-linux-musl - node@${{ matrix.node }}
-    needs:
-      - build
+    needs: build
     strategy:
       fail-fast: false
       matrix:
-        node:
-          - '24'
-          - '26'
+        include:
+          - node: 24.9.0
+            image: node:24.9.0-alpine@sha256:b0d33ed19a912e1a18ceb83e139815233cd49c123fe025e67a7c506c93e3f728
+          - node: 26.4.0
+            image: node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
         with:
           node-version: ${{ matrix.node }}
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
-        shell: bash
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
+          package-manager-cache: false
+      - name: Install dependencies
+        run: |
+          node .yarn/releases/yarn-4.4.0.cjs config set supportedArchitectures.cpu "arm64"
+          node .yarn/releases/yarn-4.4.0.cjs config set supportedArchitectures.libc "musl"
+          node .yarn/releases/yarn-4.4.0.cjs install --immutable
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: bindings-aarch64-unknown-linux-musl
           path: iroh-js/
-      - name: List packages
-        run: ls -R .
-        shell: bash
-      - name: Install dependencies
-        run: |
-          yarn config set supportedArchitectures.cpu "arm64"
-          yarn config set supportedArchitectures.libc "musl"
-          yarn install
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         with:
           platforms: arm64
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - name: Setup and run tests
-        uses: addnab/docker-run-action@v3
-        with:
-          image: node:${{ matrix.node }}-alpine
-          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
-          run: |
-            set -e
-            npm install -g corepack --force
-            corepack enable
-            yarn test
+      - name: Test in immutable arm64 container
+        run: docker run --rm --platform linux/arm64 -v "${{ github.workspace }}/iroh-js:/build" -w /build "${{ matrix.image }}" node .yarn/releases/yarn-4.4.0.cjs test
+
   test-linux-arm-gnueabihf-binding:
-    name: Test bindings on armv7-unknown-linux-gnueabihf - node@${{ matrix.node }}
-    needs:
-      - build
-    strategy:
-      fail-fast: false
-      matrix:
-        # Last node with a published linux/arm/v7 docker image is 22; node 24+
-        # only ship amd64/arm64 multi-arch manifests for node:*-bullseye-slim.
-        node:
-          - '22'
+    name: Test bindings on armv7-unknown-linux-gnueabihf - node@22.22.3
+    needs: build
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
-          node-version: ${{ matrix.node }}
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
-        shell: bash
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: 22.22.3
+          package-manager-cache: false
+      - name: Install dependencies
+        run: |
+          node .yarn/releases/yarn-4.4.0.cjs config set supportedArchitectures.cpu "arm"
+          node .yarn/releases/yarn-4.4.0.cjs install --immutable
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: bindings-armv7-unknown-linux-gnueabihf
           path: iroh-js/
-      - name: List packages
-        run: ls -R .
-        shell: bash
-      - name: Install dependencies
-        run: |
-          yarn config set supportedArchitectures.cpu "arm"
-          yarn install
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         with:
           platforms: arm
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - name: Setup and run tests
-        uses: addnab/docker-run-action@v3
-        with:
-          image: node:${{ matrix.node }}-bullseye-slim
-          options: '--platform linux/arm/v7 -v ${{ github.workspace }}/iroh-js:/build -w /build'
-          run: |
-            set -e
-            yarn test
-            ls -la
+      - name: Test in immutable arm/v7 container
+        run: docker run --rm --platform linux/arm/v7 -v "${{ github.workspace }}/iroh-js:/build" -w /build "node:22.22.3-bullseye-slim@sha256:f81e523790f0a2c86827ff6356a28fad2edbe0fe36bc3c4275a4d1e16304bf43" node .yarn/releases/yarn-4.4.0.cjs test
   publish:
-    name: Publish
-    if: startsWith(github.ref, 'refs/tags/npm-v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    name: Publish verified immutable tarballs
     needs:
+      - authorize-ref
       - native-test
       - test-macOS-windows-binding
       - test-linux-x64-gnu-binding
@@ -494,51 +360,52 @@ jobs:
       - test-linux-aarch64-gnu-binding
       - test-linux-aarch64-musl-binding
       - test-linux-arm-gnueabihf-binding
+    if: needs.authorize-ref.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
-      - uses: actions/checkout@v5
-      - name: Setup node
-        # Per npm's official Trusted Publishing docs
-        # (https://docs.npmjs.com/trusted-publishers): node 24 + setup-node@v6
-        # + an explicit registry-url, which together produce the
-        # `~/.npmrc` entry that the npm CLI's OIDC token exchange consults.
-        # The OIDC exchange itself requires npm 11.5.1+, which ships with
-        # node 24 (node 22 still bundles npm 10.x).
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
-          node-version: 24
+          ref: ${{ needs.authorize-ref.outputs.authorized_sha }}
+          persist-credentials: false
+      - name: Setup exact Node.js for npm OIDC
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.0.0
+        with:
+          node-version: 24.9.0
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
-      - name: Enable corepack (yarn)
-        run: npm install -g corepack --force && corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Install reviewed npm CLI and immutable dependencies
+        run: |
+          npm install --global npm@11.17.0
+          test "$(npm --version)" = 11.17.0
+          node .yarn/releases/yarn-4.4.0.cjs install --immutable
+      - name: Download all native artifacts and manifests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
+          pattern: bindings-*
           path: iroh-js/artifacts/
-      - name: Move artifacts
-        run: yarn artifacts
-      - name: Stage license texts
-        run: yarn stage:release
-      - name: Verify release packages and tag
-        run: |
-          set -eu
-          VERSION=$(node -p "require('./package.json').version")
-          test "$GITHUB_REF_NAME" = "npm-v$VERSION" || {
-            echo "release tag npm-v$VERSION does not match $GITHUB_REF_NAME" >&2
-            exit 1
-          }
-          yarn verify:release
-      - name: Compute npm dist-tag
-        # Prerelease versions publish under `next`; stable versions use `latest`.
-        id: npm_tag
-        run: |
-          echo "tag=$(node -p "/-/.test(require('./package.json').version) ? 'next' : 'latest'")" >> "$GITHUB_OUTPUT"
-      - name: Publish main and platform packages
-        # napi pre-publish publishes every native optional package first. Each
-        # package trusts this workflow via npm OIDC; no npm token is used.
-        run: npm publish --access public --provenance
+      - name: Verify downloaded SHA-256 manifests and native formats
+        run: node scripts/verify-native-artifacts.mjs artifacts
+      - name: Stage verified native artifacts
+        run: node .yarn/releases/yarn-4.4.0.cjs artifacts
+      - name: Stage dual-license texts
+        run: node .yarn/releases/yarn-4.4.0.cjs stage:release
+      - name: Run napi staging without publishing
+        run: node .yarn/releases/yarn-4.4.0.cjs stage:napi
+      - name: Final package and native verification
+        run: node .yarn/releases/yarn-4.4.0.cjs verify:release
+      - name: Pack all 12 packages with lifecycle scripts disabled
+        run: node .yarn/releases/yarn-4.4.0.cjs pack:release
+      - name: Inspect and verify immutable release tarballs
+        run: node scripts/verify-release-packages.mjs --artifacts-manifest artifacts/SHA256SUMS --tarballs release-tarballs
+      - name: Publish exactly the verified tarballs with provenance
+        run: node .yarn/releases/yarn-4.4.0.cjs publish:verified
         env:
-          NPM_CONFIG_ACCESS: public
-          NPM_CONFIG_PROVENANCE: true
-          NPM_CONFIG_TAG: ${{ steps.npm_tag.outputs.tag }}
+          VOLT_NPM_RELEASE_ENVIRONMENT: npm-release
+          VOLT_RELEASE_AUTHORIZED_SHA: ${{ needs.authorize-ref.outputs.authorized_sha }}

@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "rustToolchain": "1.97.1",
+  "nodeBuildVersion": "24.9.0",
+  "androidNdkVersion": "r23c",
+  "targets": [
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "suffix": "win32-x64-msvc",
+      "host": "[\"windows-latest\"]",
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target x86_64-pc-windows-msvc",
+      "trustedInputs": ["github-hosted windows-latest image (resolved image version recorded in the artifact manifest)", "MSVC supplied by the GitHub-hosted image", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["win32"], "cpu": ["x64"] },
+      "binary": { "format": "pe", "arch": "x64", "bits": 64, "filePattern": "PE32\\+.*(x86-64|x86_64)" }
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "suffix": "linux-x64-gnu",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target x86_64-unknown-linux-gnu",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "host glibc toolchain", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["linux"], "cpu": ["x64"], "libc": ["glibc"] },
+      "binary": { "format": "elf", "arch": "x64", "bits": 64, "filePattern": "ELF 64-bit.*(x86-64|x86_64)" }
+    },
+    {
+      "target": "x86_64-unknown-linux-musl",
+      "suffix": "linux-x64-musl",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "setup": "python3 -m pip install --disable-pip-version-check --no-deps ziglang==0.15.2",
+      "build": "set -euo pipefail\nmkdir -p \"$HOME/zigshim\"\nprintf '#!/bin/sh\\nA=;for x in \"$@\";do case \"$x\" in --target=*) ;; *) A=\"$A $x\";; esac;done;exec python3 -m ziglang cc -target x86_64-linux-musl $A\\n' > \"$HOME/zigshim/zcc\"\nprintf '#!/bin/sh\\nA=;for x in \"$@\";do case \"$x\" in --target=*) ;; *) A=\"$A $x\";; esac;done;exec python3 -m ziglang c++ -target x86_64-linux-musl $A\\n' > \"$HOME/zigshim/zcxx\"\nchmod +x \"$HOME/zigshim/zcc\" \"$HOME/zigshim/zcxx\"\nexport CC_x86_64_unknown_linux_musl=\"$HOME/zigshim/zcc\"\nexport CXX_x86_64_unknown_linux_musl=\"$HOME/zigshim/zcxx\"\nexport CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=\"$HOME/zigshim/zcc\"\nexport TARGET_CC=\"$HOME/zigshim/zcc\"\nexport TARGET_CXX=\"$HOME/zigshim/zcxx\"\nnode .yarn/releases/yarn-4.4.0.cjs build --target x86_64-unknown-linux-musl",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "ziglang==0.15.2 installed without dependencies", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["linux"], "cpu": ["x64"], "libc": ["musl"] },
+      "binary": { "format": "elf", "arch": "x64", "bits": 64, "filePattern": "ELF 64-bit.*(x86-64|x86_64)" }
+    },
+    {
+      "target": "aarch64-apple-darwin",
+      "suffix": "darwin-arm64",
+      "host": "[\"self-hosted\",\"macOS\",\"ARM64\"]",
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target aarch64-apple-darwin",
+      "trustedInputs": ["protected self-hosted macOS/ARM64 runner image (macOS and Xcode versions recorded in the artifact manifest)", "Apple SDK selected by Xcode on the protected runner", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["darwin"], "cpu": ["arm64"] },
+      "binary": { "format": "macho", "arch": "arm64", "bits": 64, "filePattern": "Mach-O 64-bit.*arm64" }
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu",
+      "suffix": "linux-arm64-gnu",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "setup": "sudo apt-get update\nsudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu",
+      "systemPackages": ["gcc-aarch64-linux-gnu", "g++-aarch64-linux-gnu"],
+      "build": "set -euo pipefail\nexport CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc\nexport CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++\nexport CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc\nnode .yarn/releases/yarn-4.4.0.cjs build --target aarch64-unknown-linux-gnu --use-napi-cross",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "distribution packages gcc-aarch64-linux-gnu and g++-aarch64-linux-gnu (resolved versions recorded in the artifact manifest)", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["linux"], "cpu": ["arm64"], "libc": ["glibc"] },
+      "binary": { "format": "elf", "arch": "arm64", "bits": 64, "filePattern": "ELF 64-bit.*(aarch64|ARM64)" }
+    },
+    {
+      "target": "armv7-unknown-linux-gnueabihf",
+      "suffix": "linux-arm-gnueabihf",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "setup": "sudo apt-get update\nsudo apt-get -y install gcc-arm-linux-gnueabihf",
+      "systemPackages": ["gcc-arm-linux-gnueabihf"],
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target armv7-unknown-linux-gnueabihf --use-napi-cross",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "distribution package gcc-arm-linux-gnueabihf (resolved version recorded in the artifact manifest)", "setup-zig action pinned to abea47f85e598557f500fa1fd2ab7464fcb39406 with Zig 0.11.0", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["linux"], "cpu": ["arm"], "libc": ["glibc"] },
+      "binary": { "format": "elf", "arch": "arm", "bits": 32, "filePattern": "ELF 32-bit.*ARM" }
+    },
+    {
+      "target": "armv7-unknown-linux-musleabihf",
+      "suffix": "linux-arm-musleabihf",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "setup": "sudo apt-get update\nsudo apt-get -y install binutils-arm-linux-gnueabihf gcc-arm-linux-gnueabihf musl-tools musl-dev",
+      "systemPackages": ["binutils-arm-linux-gnueabihf", "gcc-arm-linux-gnueabihf", "musl-tools", "musl-dev"],
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target armv7-unknown-linux-musleabihf --use-napi-cross",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "distribution packages binutils-arm-linux-gnueabihf, gcc-arm-linux-gnueabihf, musl-tools and musl-dev (resolved versions recorded in the artifact manifest)", "setup-zig action pinned to abea47f85e598557f500fa1fd2ab7464fcb39406 with Zig 0.11.0", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["linux"], "cpu": ["arm"], "libc": ["musl"] },
+      "binary": { "format": "elf", "arch": "arm", "bits": 32, "filePattern": "ELF 32-bit.*ARM" }
+    },
+    {
+      "target": "aarch64-linux-android",
+      "suffix": "android-arm64",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target aarch64-linux-android",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "Android NDK r23c installed by setup-ndk action pinned to 4f8a02c22e2c17ff9ebba9026e599da847aa8374", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["android"], "cpu": ["arm64"] },
+      "binary": { "format": "elf", "arch": "arm64", "bits": 64, "filePattern": "ELF 64-bit.*(aarch64|ARM64)" }
+    },
+    {
+      "target": "armv7-linux-androideabi",
+      "suffix": "android-arm-eabi",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target armv7-linux-androideabi",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "Android NDK r23c installed by setup-ndk action pinned to 4f8a02c22e2c17ff9ebba9026e599da847aa8374", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["android"], "cpu": ["arm"] },
+      "binary": { "format": "elf", "arch": "arm", "bits": 32, "filePattern": "ELF 32-bit.*ARM" }
+    },
+    {
+      "target": "aarch64-unknown-linux-musl",
+      "suffix": "linux-arm64-musl",
+      "host": "[\"self-hosted\",\"linux\",\"X64\"]",
+      "setup": "python3 -m pip install --disable-pip-version-check --no-deps ziglang==0.15.2",
+      "build": "set -euo pipefail\nmkdir -p \"$HOME/zigshim\"\nprintf '#!/bin/sh\\nA=;for x in \"$@\";do case \"$x\" in --target=*) ;; *) A=\"$A $x\";; esac;done;exec python3 -m ziglang cc -target aarch64-linux-musl $A\\n' > \"$HOME/zigshim/zcc\"\nprintf '#!/bin/sh\\nA=;for x in \"$@\";do case \"$x\" in --target=*) ;; *) A=\"$A $x\";; esac;done;exec python3 -m ziglang c++ -target aarch64-linux-musl $A\\n' > \"$HOME/zigshim/zcxx\"\nchmod +x \"$HOME/zigshim/zcc\" \"$HOME/zigshim/zcxx\"\nexport CC_aarch64_unknown_linux_musl=\"$HOME/zigshim/zcc\"\nexport CXX_aarch64_unknown_linux_musl=\"$HOME/zigshim/zcxx\"\nexport CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=\"$HOME/zigshim/zcc\"\nexport TARGET_CC=\"$HOME/zigshim/zcc\"\nexport TARGET_CXX=\"$HOME/zigshim/zcxx\"\nnode .yarn/releases/yarn-4.4.0.cjs build --target aarch64-unknown-linux-musl",
+      "trustedInputs": ["protected self-hosted linux/X64 runner image (kernel and image identity recorded in the artifact manifest)", "ziglang==0.15.2 installed without dependencies", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["linux"], "cpu": ["arm64"], "libc": ["musl"] },
+      "binary": { "format": "elf", "arch": "arm64", "bits": 64, "filePattern": "ELF 64-bit.*(aarch64|ARM64)" }
+    },
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "suffix": "win32-arm64-msvc",
+      "host": "[\"windows-latest\"]",
+      "build": "node .yarn/releases/yarn-4.4.0.cjs build --target aarch64-pc-windows-msvc",
+      "trustedInputs": ["github-hosted windows-latest image (resolved image version recorded in the artifact manifest)", "MSVC supplied by the GitHub-hosted image", "Node.js 24.9.0", "Rust 1.97.1"],
+      "package": { "os": ["win32"], "cpu": ["arm64"] },
+      "binary": { "format": "pe", "arch": "arm64", "bits": 64, "filePattern": "PE32\\+.*(Aarch64|ARM64)" }
+    }
+  ]
+}
