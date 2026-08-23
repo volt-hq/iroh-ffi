@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { inspectNativeBinary, jsRoot, releaseConfig } from '../scripts/release-config.mjs'
+import { finalizeTargetBuild } from '../scripts/target-build-output.mjs'
 
 function run(script, args = [], env = process.env) {
   return spawnSync(process.execPath, [script, ...args], {
@@ -39,6 +40,24 @@ test('cross-target matrix never forces the host platform', () => {
   const invalid = run('scripts/build-target.mjs', ['--target', 'untrusted-target'])
   assert.notEqual(invalid.status, 0)
   assert.match(invalid.stderr, /untrusted build target/)
+})
+
+test('target build finalization creates only the trusted suffixed artifact', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'volt-iroh-target-'))
+  const spec = releaseConfig.targets[0]
+  const source = join(directory, 'iroh.node')
+  const destination = join(directory, `iroh.${spec.suffix}.node`)
+  try {
+    writeFileSync(source, 'native-addon')
+    assert.equal(finalizeTargetBuild(directory, spec), destination)
+    assert.equal(existsSync(source), false)
+    assert.equal(readFileSync(destination, 'utf8'), 'native-addon')
+
+    writeFileSync(source, 'replacement')
+    assert.throws(() => finalizeTargetBuild(directory, spec), /refusing to replace stale target artifact/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('native binary parser rejects architecture and format ambiguity', () => {
