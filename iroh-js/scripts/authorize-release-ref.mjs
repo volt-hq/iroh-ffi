@@ -29,7 +29,23 @@ assert.equal(process.env.GITHUB_REPOSITORY, ownedRepository)
 const ref = process.env.GITHUB_REF ?? ''
 const refName = process.env.GITHUB_REF_NAME ?? ''
 const outputPath = process.env.GITHUB_OUTPUT
+const token = process.env.GITHUB_TOKEN
 assert.ok(outputPath)
+assert.ok(token, 'GITHUB_TOKEN is required to verify protected release refs')
+
+const branchResponse = await fetch(
+  `https://api.github.com/repos/${ownedRepository}/branches/${encodeURIComponent(ownedBranch)}`,
+  {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  },
+)
+assert.equal(branchResponse.status, 200, `GitHub branch API returned ${branchResponse.status}`)
+const branch = await branchResponse.json()
+assert.equal(branch.protected, true, `${ownedBranch} must remain protected`)
 
 // Fetch only the protected owned branch. A tag is authorized only when it
 // resolves to this exact remote branch head, not merely to an arbitrary commit
@@ -57,8 +73,6 @@ if (ref === `refs/heads/${ownedBranch}`) {
   assert.equal(authorizedCommit, branchCommit, 'release tag must point at the exact protected branch head')
 
   const tagObject = git('rev-parse', ref)
-  const token = process.env.GITHUB_TOKEN
-  assert.ok(token, 'GITHUB_TOKEN is required to verify the signed annotated tag with GitHub')
   const response = await fetch(
     `https://api.github.com/repos/${ownedRepository}/git/tags/${tagObject}`,
     {

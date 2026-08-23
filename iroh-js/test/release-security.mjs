@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { test } from 'node:test'
 
 import { inspectNativeBinary, releaseConfig } from '../scripts/release-config.mjs'
@@ -55,4 +58,43 @@ test('verified tarball publisher rejects local execution before invoking npm', (
   const result = run('scripts/publish-verified-tarballs.mjs', [], env)
   assert.notEqual(result.status, 0)
   assert.match(result.stderr, /GITHUB_ACTIONS/)
+})
+
+test('trust transcript verifier distinguishes auth prompts, absence, and exact trust', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'volt-iroh-trust-'))
+  const transcript = join(directory, 'trust.txt')
+  const env = {
+    ...process.env,
+    EXPECTED_WORKFLOW: 'ci_js.yml',
+    EXPECTED_ENVIRONMENT: 'npm-release',
+  }
+  try {
+    writeFileSync(transcript, '{"title":"Authenticate your account at","url":"https://example.invalid"}\n')
+    const absent = run('scripts/verify-trust-transcript.mjs', [transcript], env)
+    assert.equal(absent.status, 10, absent.stderr)
+
+    writeFileSync(transcript, `${JSON.stringify({ title: 'Authenticate your account at' })}\n${JSON.stringify({
+      id: 'trust-id',
+      type: 'github',
+      file: 'ci_js.yml',
+      repository: 'volt-hq/iroh-ffi',
+      environment: 'npm-release',
+      permissions: ['createPackage'],
+    }, null, 2)}\n`)
+    const exact = run('scripts/verify-trust-transcript.mjs', [transcript], env)
+    assert.equal(exact.status, 0, exact.stderr)
+
+    writeFileSync(transcript, `${JSON.stringify({
+      id: 'trust-id',
+      type: 'github',
+      file: 'wrong.yml',
+      repository: 'other/repository',
+      environment: 'npm-release',
+      permissions: ['createPackage'],
+    })}\n`)
+    const mismatch = run('scripts/verify-trust-transcript.mjs', [transcript], env)
+    assert.notEqual(mismatch.status, 0)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
 })

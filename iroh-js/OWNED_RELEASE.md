@@ -61,9 +61,12 @@ GitHub-hosted runner before repository code reaches a self-hosted runner.
    not permit administrators to bypass the rule for releases.
 2. Add a tag ruleset for `npm-v*`: restrict creation to designated release
    maintainers and block updates and deletion. Do not allow ruleset bypass.
-3. Create environment `npm-release`. Configure at least one required reviewer
-   who is not the tag creator, prevent self-review, and restrict deployments to
-   protected tags matching only `npm-v*` from this repository.
+3. Create environment `npm-release` with no required reviewer and restrict
+   deployments to protected tags matching only `npm-v*` from this repository.
+   Volt currently has one organization maintainer, so independent environment
+   review is unavailable by explicit owner decision. The signed annotated tag,
+   protected exact-head requirement, and trusted-publisher checks are the
+   release authorization; do not weaken or bypass those remaining controls.
 4. Do not add repository/environment `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or other
    npm credentials. The publish job alone has `id-token: write`.
 5. Keep the existing self-hosted macOS ARM64 and Linux X64 runners restricted
@@ -106,6 +109,15 @@ npm login
 ./iroh-js/scripts/bootstrap-owned-npm.sh
 ```
 
+The script batches publication, registry verification, trust discovery, trust
+creation, trust verification, and MFA enforcement into separate phases. At the
+first web-auth prompt in each protected phase, select npm's option to skip
+repeated 2FA for the next five minutes; npm documents this specifically for
+bulk trusted-publisher configuration. This normally requires one login and no
+more than one browser approval per protected phase, rather than approvals per
+package. Every package is still verified independently, and npm will reopen
+interactive web auth when a short authorization window expires.
+
 The script fails on registry/network ambiguity and on any unexpected existing
 package. For each package it creates or verifies only
 `0.0.0-bootstrap.0` under only the `bootstrap` dist-tag, then verifies exact
@@ -125,7 +137,8 @@ repository.
 After it succeeds, inspect all 12 package settings on npmjs.com and confirm:
 
 - owner and sole maintainer are the expected `hansjm10` account;
-- only bootstrap version/tag/content exist before the first real release;
+- only the bootstrap version/content exist before the first real release, with
+  npm's automatic `bootstrap` and `latest` tags both pointing to it;
 - the trusted publisher shows the exact repository/workflow/environment above;
 - publishing access says **Require two-factor authentication and disallow
   tokens**; and
@@ -169,8 +182,10 @@ git verify-tag npm-v1.1.1-volt.1
 git push origin refs/tags/npm-v1.1.1-volt.1
 ```
 
-Do not create a `v*` tag for an owned npm release. The environment approval is
-required before the GitHub-hosted publish job starts. The job verifies native
+Do not create a `v*` tag for an owned npm release. The `npm-release`
+environment admits only the protected `npm-v*` tag pattern; the GitHub-verified
+signature and exact protected-branch head authorize the sole-maintainer
+release. The job verifies native
 SHA-256 manifests, binary format/architecture, package OS/CPU/libc metadata,
 dual-license texts, exact staged dependencies, and all 12 immutable tarballs.
 It publishes only those tarballs, with scripts disabled and provenance enabled

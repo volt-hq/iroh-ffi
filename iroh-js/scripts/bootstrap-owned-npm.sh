@@ -4,7 +4,8 @@ set -euo pipefail
 readonly NPM_VERSION=11.17.0
 readonly BOOTSTRAP_VERSION=0.0.0-bootstrap.0
 readonly EXPECTED_USER=hansjm10
-readonly REPOSITORY=https://github.com/volt-hq/iroh-ffi.git
+readonly SOURCE_REPOSITORY=https://github.com/volt-hq/iroh-ffi.git
+readonly REGISTRY_REPOSITORY=git+https://github.com/volt-hq/iroh-ffi.git
 readonly RELEASE_ENVIRONMENT=npm-release
 readonly WORKFLOW_FILE=ci_js.yml
 
@@ -67,17 +68,39 @@ package_exists() {
   exit 1
 }
 
+wait_for_registry_metadata() {
+  local package=$1
+  local error_file="$work/wait-${package##*/}.err"
+  for _ in {1..60}; do
+    if npm view "$package@$BOOTSTRAP_VERSION" version --json >/dev/null 2>"$error_file"; then
+      return
+    fi
+    if ! grep -Eq 'E404|404 Not Found' "$error_file"; then
+      cat "$error_file" >&2
+      echo "ERROR: registry lookup failed for $package" >&2
+      exit 1
+    fi
+    sleep 5
+  done
+  cat "$error_file" >&2
+  echo "ERROR: timed out waiting for $package@$BOOTSTRAP_VERSION to propagate" >&2
+  exit 1
+}
+
 verify_registry_metadata() {
   local package=$1
-  PACKAGE="$package" BOOTSTRAP_VERSION="$BOOTSTRAP_VERSION" REPOSITORY="$REPOSITORY" node <<'NODE'
+  PACKAGE="$package" EXPECTED_VERSION="$BOOTSTRAP_VERSION" EXPECTED_REPOSITORY="$REGISTRY_REPOSITORY" node <<'NODE'
 const assert = require('node:assert/strict')
 const { execFileSync } = require('node:child_process')
 const view = (...fields) => JSON.parse(execFileSync('npm', ['view', process.env.PACKAGE, ...fields, '--json'], { encoding: 'utf8' }))
 const normalizeArray = (value) => Array.isArray(value) ? value : [value]
 assert.equal(view('name'), process.env.PACKAGE)
-assert.deepEqual(normalizeArray(view('versions')), [process.env.BOOTSTRAP_VERSION])
-assert.deepEqual(view('dist-tags'), { bootstrap: process.env.BOOTSTRAP_VERSION })
-assert.equal(view('repository.url'), process.env.REPOSITORY)
+assert.deepEqual(normalizeArray(view('versions')), [process.env.EXPECTED_VERSION])
+assert.deepEqual(view('dist-tags'), {
+  bootstrap: process.env.EXPECTED_VERSION,
+  latest: process.env.EXPECTED_VERSION,
+})
+assert.equal(view('repository.url'), process.env.EXPECTED_REPOSITORY)
 assert.equal(view('license'), 'MIT OR Apache-2.0')
 const maintainers = normalizeArray(view('maintainers')).map((entry) => typeof entry === 'string' ? entry.split(' ')[0] : entry.name)
 assert.deepEqual(maintainers, ['hansjm10'])
@@ -101,16 +124,16 @@ verify_published_content() {
   unpack="$audit/unpack"
   mkdir "$unpack"
   tar -xzf "$audit/$filename" -C "$unpack"
-  PACKAGE="$package" BOOTSTRAP_VERSION="$BOOTSTRAP_VERSION" REPOSITORY="$REPOSITORY" \
+  PACKAGE="$package" EXPECTED_VERSION="$BOOTSTRAP_VERSION" EXPECTED_REPOSITORY="$SOURCE_REPOSITORY" \
     node - "$unpack/package/package.json" <<'NODE'
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const packageJson = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))
 assert.deepEqual(packageJson, {
   name: process.env.PACKAGE,
-  version: process.env.BOOTSTRAP_VERSION,
+  version: process.env.EXPECTED_VERSION,
   description: 'Reserved for the Volt-owned Iroh N-API distribution',
-  repository: { type: 'git', url: process.env.REPOSITORY },
+  repository: { type: 'git', url: process.env.EXPECTED_REPOSITORY },
   license: 'MIT OR Apache-2.0',
   publishConfig: { access: 'public' },
 })
@@ -129,56 +152,91 @@ NODE
 
 verify_trust() {
   local package=$1
-  local trust_json="$work/trust-${package##*/}.json"
-  npm trust list "$package" --json > "$trust_json"
-  PACKAGE="$package" RELEASE_ENVIRONMENT="$RELEASE_ENVIRONMENT" WORKFLOW_FILE="$WORKFLOW_FILE" \
-    node - "$trust_json" <<'NODE'
-const assert = require('node:assert/strict')
-const fs = require('node:fs')
-const text = JSON.stringify(JSON.parse(fs.readFileSync(process.argv[2], 'utf8')))
-for (const expected of [process.env.PACKAGE, 'volt-hq/iroh-ffi', process.env.WORKFLOW_FILE, process.env.RELEASE_ENVIRONMENT]) {
-  assert.ok(text.includes(expected), `trusted publisher is missing ${expected}`)
-}
-assert.match(text, /publish/i)
-NODE
+  local transcript="$work/trust-${package##*/}.txt"
+  # npm requires fresh web 2FA even to list trust configuration. A redirected
+  # command is not attached to a TTY, so npm cannot complete that browser flow.
+  # Record a pseudo-terminal transcript, then extract and verify its JSON.
+  script -eq "$transcript" npm trust list "$package" --json
+  EXPECTED_ENVIRONMENT="$RELEASE_ENVIRONMENT" EXPECTED_WORKFLOW="$WORKFLOW_FILE" \
+    node "$repo_root/iroh-js/scripts/verify-trust-transcript.mjs" "$transcript"
 }
 
+missing_packages=()
 for package in "${packages[@]}"; do
   error_file="$work/view-${package##*/}.err"
   if package_exists "$package" "$error_file"; then
-    echo "verifying expected existing bootstrap package: $package"
-    verify_registry_metadata "$package"
-    verify_published_content "$package"
-  else
-    dir="$work/package-${package##*/}"
-    mkdir -p "$dir"
-    cp "$repo_root/LICENSE-APACHE" "$repo_root/LICENSE-MIT" "$dir/"
-    PKG="$package" BOOTSTRAP_VERSION="$BOOTSTRAP_VERSION" REPOSITORY="$REPOSITORY" \
-      node - "$dir/package.json" <<'NODE'
+    echo "found existing bootstrap package: $package"
+    continue
+  fi
+  missing_packages+=("$package")
+  dir="$work/package-${package##*/}"
+  mkdir -p "$dir"
+  cp "$repo_root/LICENSE-APACHE" "$repo_root/LICENSE-MIT" "$dir/"
+  PKG="$package" EXPECTED_VERSION="$BOOTSTRAP_VERSION" EXPECTED_REPOSITORY="$SOURCE_REPOSITORY" \
+    node - "$dir/package.json" <<'NODE'
 const fs = require('node:fs')
 fs.writeFileSync(process.argv[2], `${JSON.stringify({
   name: process.env.PKG,
-  version: process.env.BOOTSTRAP_VERSION,
+  version: process.env.EXPECTED_VERSION,
   description: 'Reserved for the Volt-owned Iroh N-API distribution',
-  repository: { type: 'git', url: process.env.REPOSITORY },
+  repository: { type: 'git', url: process.env.EXPECTED_REPOSITORY },
   license: 'MIT OR Apache-2.0',
   publishConfig: { access: 'public' },
 }, null, 2)}\n`)
 NODE
-    printf '# `%s`\n\nReserved for Volt-owned Iroh releases.\n' "$package" > "$dir/README.md"
-    npm publish "$dir" --ignore-scripts --access public --tag bootstrap
-    verify_registry_metadata "$package"
-    verify_published_content "$package"
+  printf '# `%s`\n\nReserved for Volt-owned Iroh releases.\n' "$package" > "$dir/README.md"
+done
+
+if (( ${#missing_packages[@]} )); then
+  echo "==> Publishing ${#missing_packages[@]} missing bootstrap packages"
+  for package in "${missing_packages[@]}"; do
+    npm publish "$work/package-${package##*/}" --ignore-scripts --access public --tag bootstrap
+  done
+fi
+
+echo "==> Waiting for registry propagation, then verifying all bootstrap packages"
+for package in "${packages[@]}"; do
+  wait_for_registry_metadata "$package"
+done
+for package in "${packages[@]}"; do
+  verify_registry_metadata "$package"
+  verify_published_content "$package"
+done
+
+missing_trust=()
+echo "==> Discovering existing trusted publishers"
+for package in "${packages[@]}"; do
+  if verify_trust "$package"; then
+    echo "verified existing trusted publisher: $package"
+  else
+    trust_status=$?
+    if (( trust_status != 10 )); then
+      exit "$trust_status"
+    fi
+    missing_trust+=("$package")
   fi
+done
 
-  npm trust github "$package" \
-    --repo volt-hq/iroh-ffi \
-    --file "$WORKFLOW_FILE" \
-    --env "$RELEASE_ENVIRONMENT" \
-    --allow-publish \
-    --yes
+if (( ${#missing_trust[@]} )); then
+  echo "==> Configuring ${#missing_trust[@]} missing trusted publishers"
+  for package in "${missing_trust[@]}"; do
+    npm trust github "$package" \
+      --repo volt-hq/iroh-ffi \
+      --file "$WORKFLOW_FILE" \
+      --env "$RELEASE_ENVIRONMENT" \
+      --allow-publish \
+      --yes
+    sleep 2
+  done
+fi
+
+echo "==> Verifying all trusted publishers"
+for package in "${packages[@]}"; do
   verify_trust "$package"
+done
 
+echo "==> Requiring interactive 2FA and disallowing tokens for every package"
+for package in "${packages[@]}"; do
   # npm's mfa=publish package setting is the CLI form of requiring interactive
   # 2FA and disallowing traditional token publication. OIDC trusted publishing
   # remains permitted. Confirm the matching UI setting after this script.

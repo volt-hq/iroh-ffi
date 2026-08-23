@@ -680,7 +680,7 @@ cat <<EOF
 
 Prepared @hansjm10/volt-iroh@$VERSION.
 After the publisher bootstrap in iroh-js/OWNED_RELEASE.md, release exactly this commit with:
-  git tag -a npm-v$VERSION -m "npm: @hansjm10/volt-iroh@$VERSION"
+  git tag -s -a npm-v$VERSION -m "npm: @hansjm10/volt-iroh@$VERSION"
   git push origin npm-v$VERSION
 EOF
 '''

@@ -30,4 +30,9 @@ assert.match(uncommented, /stage:napi/)
 assert.match(uncommented, /--tarballs release-tarballs/)
 assert.match(uncommented, /publish:verified/)
 
+const authorizeSource = readFileSync(join(jsRoot, 'scripts', 'authorize-release-ref.mjs'), 'utf8')
+assert.match(authorizeSource, /branch\.protected, true/)
+assert.match(authorizeSource, /tag\.verification\?\.verified, true/)
+assert.match(authorizeSource, /authorizedCommit, branchCommit/)
+
 console.log('verified pinned actions and fail-closed owned npm workflow structure')
