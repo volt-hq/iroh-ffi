@@ -2,8 +2,14 @@
 
 > **Volt fork:** the owned npm package is released independently. Follow
 > [`iroh-js/OWNED_RELEASE.md`](iroh-js/OWNED_RELEASE.md); do not use a `v*` tag
-> to publish it. The cross-language instructions below are retained for the
-> upstream project history and are not the Volt npm release path.
+> to publish it. Volt Swift artifacts use signed `v*-volt.*` tags and only
+> `.github/workflows/release_volt_swift.yml`; upstream PyPI, Maven, docs, and
+> cross-language workflows match `upstream-v*` instead. The Swift tag must point
+> to the exact `volt/owned-iroh` head, `Package.swift` must contain that tag and
+> the `volt-hq/iroh-ffi` asset URL, and a draft release must already contain an
+> `IrohLib.xcframework.zip` matching the baked checksum. The workflow verifies
+> all of those facts before publishing the draft. The cross-language
+> instructions below are retained only for upstream project history.
 
 A release ships a new version of the iroh-ffi crate's surface to every binding
 host (npm, PyPI, Maven Central, GitHub Releases for Swift) plus refreshed docs

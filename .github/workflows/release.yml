@@ -1,4 +1,5 @@
-# Release pipeline. Fires on `v*` tag push, after the release PR has merged.
+# Retained upstream cross-language release pipeline. Volt-owned `v*-volt.*`
+# Swift tags are handled only by release_volt_swift.yml.
 #
 # The Swift xcframework zip is built upstream by release_swift.yml on the
 # `release/v*` PR branch and uploaded to a draft GitHub release. This
@@ -12,7 +13,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-    - "v*"
+    - "upstream-v*"
 
 env:
   LIB_NAME: libiroh_ffi

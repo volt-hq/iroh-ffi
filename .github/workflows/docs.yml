@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "upstream-v*"
 
 # Allow one concurrent deployment; never cancel an in-progress Pages deploy.
 concurrency:

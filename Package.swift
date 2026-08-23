@@ -24,8 +24,8 @@ import Foundation
 // commit on the release branch, marked `[skip swift-release]`), so the value
 // here always matches the IrohLib.xcframework.zip attached to the GitHub
 // release — never a cross-host determinism game.
-let releaseTag = "v1.1.0"
-let releaseChecksum = "ad46dadf09f9224157512992923562931ed60f252414230d50893a4d515c5776"
+let releaseTag = "v1.1.1-volt.1"
+let releaseChecksum = "965bf445e7a08931192602bf35fb767aa84dee6ea73c5d9f14d19d38b77d1025"
 
 let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let localBuiltBinary = packageDir
@@ -40,7 +40,7 @@ let irohBinary: Target = useLocalXcframework
         path: "Iroh.xcframework")
     : .binaryTarget(
         name: "Iroh",
-        url: "https://github.com/n0-computer/iroh-ffi/releases/download/\(releaseTag)/IrohLib.xcframework.zip",
+        url: "https://github.com/volt-hq/iroh-ffi/releases/download/\(releaseTag)/IrohLib.xcframework.zip",
         checksum: releaseChecksum)
 
 let package = Package(

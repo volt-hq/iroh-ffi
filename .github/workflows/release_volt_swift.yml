@@ -1,0 +1,48 @@
+name: Release Volt Swift artifact
+
+on:
+  push:
+    tags:
+      - "v*-volt.*"
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify protected signed tag and Swift artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=${GITHUB_REF#refs/tags/}
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/volt/owned-iroh)"
+          ref=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}")
+          tag_sha=$(jq -r '.object.sha' <<<"$ref")
+          test "$(jq -r '.object.type' <<<"$ref")" = tag
+          tag_object=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_sha}")
+          test "$(jq -r '.verification.verified' <<<"$tag_object")" = true
+          test "$(jq -r '.verification.reason' <<<"$tag_object")" = valid
+          test "$(jq -r '.object.type' <<<"$tag_object")" = commit
+          test "$(jq -r '.object.sha' <<<"$tag_object")" = "$(git rev-parse HEAD)"
+          manifest_tag=$(grep -oE 'let releaseTag = "v[^"]+"' Package.swift | sed -E 's/.*"(v[^"]+)"/\1/')
+          test "$manifest_tag" = "$tag"
+          grep -F 'https://github.com/volt-hq/iroh-ffi/releases/download/' Package.swift
+          expected=$(grep -oE 'let releaseChecksum = "[a-f0-9]{64}"' Package.swift | sed -E 's/.*"([a-f0-9]{64})"/\1/')
+          gh release download "$tag" --pattern IrohLib.xcframework.zip --dir /tmp/volt-swift-release
+          actual=$(sha256sum /tmp/volt-swift-release/IrohLib.xcframework.zip | awk '{print $1}')
+          test "$actual" = "$expected"
+      - name: Publish verified Swift release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.3
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: true
+          fail_on_unmatched_files: true
