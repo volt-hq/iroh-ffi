@@ -7,7 +7,11 @@ MIT/Apache-2.0 dual-license choice.
 
 ## Initial owned version and lineage
 
-The exact initial version is `1.1.1-volt.1`, derived from upstream `1.1.0`.
+The exact initial paired Node/Swift version is `1.1.1-volt.2`, derived from
+upstream `1.1.0`. The immutable `v1.1.1-volt.1` Swift prerelease was published,
+but its matching npm run failed closed before publishing because setup-node
+injected a placeholder auth token. Its signed npm tag remains as audit history;
+no npm `1.1.1-volt.1` package exists or may be reused.
 
 - Upstream `v1.1.0` release commit: `5e451092dba0c1a09ee83ff6e5be37b1152a5c58`
 - Upstream base immediately below the Volt-only relay patch:
@@ -153,7 +157,7 @@ logout reported failure.
 From the repository root:
 
 ```bash
-cargo make prepare-owned-npm-release 1.1.1-volt.1
+cargo make prepare-owned-npm-release 1.1.1-volt.2
 cargo make test-js
 ```
 
@@ -177,10 +181,10 @@ set -euo pipefail
 git fetch origin volt/owned-iroh
 branch_head=$(git rev-parse origin/volt/owned-iroh)
 test "$(git rev-parse HEAD)" = "$branch_head"
-git tag -s -a npm-v1.1.1-volt.1 "$branch_head" \
-  -m "npm: @hansjm10/volt-iroh@1.1.1-volt.1"
-git verify-tag npm-v1.1.1-volt.1
-git push origin refs/tags/npm-v1.1.1-volt.1
+git tag -s -a npm-v1.1.1-volt.2 "$branch_head" \
+  -m "npm: @hansjm10/volt-iroh@1.1.1-volt.2"
+git verify-tag npm-v1.1.1-volt.2
+git push origin refs/tags/npm-v1.1.1-volt.2
 ```
 
 Do not create a `v*` tag for an owned npm release. The `npm-release`
@@ -195,9 +199,9 @@ for every package.
 After publication, verify registry metadata and provenance before consumption:
 
 ```bash
-npm view @hansjm10/volt-iroh@1.1.1-volt.1 --json \
+npm view @hansjm10/volt-iroh@1.1.1-volt.2 --json \
   name version dist-tags optionalDependencies repository license
-npm view @hansjm10/volt-iroh-darwin-arm64@1.1.1-volt.1 --json \
+npm view @hansjm10/volt-iroh-darwin-arm64@1.1.1-volt.2 --json \
   name version os cpu libc repository license
 npm trust list @hansjm10/volt-iroh
 ```

@@ -10,7 +10,7 @@ attribution in the repository history and dual-license notices.
 ## Install
 
 ```sh
-npm install --save-exact @hansjm10/volt-iroh@1.1.1-volt.1
+npm install --save-exact @hansjm10/volt-iroh@1.1.1-volt.2
 ```
 
 See the fork's
