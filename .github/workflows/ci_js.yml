@@ -12,9 +12,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
-# SECURITY: this workflow executes repository code on persistent self-hosted
-# runners. It therefore accepts only trusted direct pushes to the protected
-# owned branch and protected npm release tags. Do not add pull_request,
+# SECURITY: this workflow accepts only trusted direct pushes to the protected
+# owned branch and protected npm release tags. Linux and Windows jobs use
+# ephemeral GitHub-hosted runners; macOS uses one repository-scoped local
+# runner. Do not add pull_request,
 # workflow_dispatch, pull_request_target, or arbitrary-ref inputs.
 on:
   push:
@@ -184,7 +185,7 @@ jobs:
             image: node:24.9.0-slim@sha256:3e69116c924bfcba6c6979aff60d966c37aef56d488ce091c69d442ebec9f103
           - node: 26.4.0
             image: node:26.4.0-slim@sha256:a1d9d671994fc2d26e297ac56b4b1522a8bc7fa71c43b14cd1b1fe6c5116f7dc
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./iroh-js
@@ -218,7 +219,7 @@ jobs:
             image: node:24.9.0-alpine@sha256:b0d33ed19a912e1a18ceb83e139815233cd49c123fe025e67a7c506c93e3f728
           - node: 26.4.0
             image: node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./iroh-js
@@ -253,7 +254,7 @@ jobs:
             image: node:24.9.0-slim@sha256:3e69116c924bfcba6c6979aff60d966c37aef56d488ce091c69d442ebec9f103
           - node: 26.4.0
             image: node:26.4.0-slim@sha256:a1d9d671994fc2d26e297ac56b4b1522a8bc7fa71c43b14cd1b1fe6c5116f7dc
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./iroh-js
@@ -292,7 +293,7 @@ jobs:
             image: node:24.9.0-alpine@sha256:b0d33ed19a912e1a18ceb83e139815233cd49c123fe025e67a7c506c93e3f728
           - node: 26.4.0
             image: node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./iroh-js
@@ -323,7 +324,7 @@ jobs:
   test-linux-arm-gnueabihf-binding:
     name: Test bindings on armv7-unknown-linux-gnueabihf - node@22.22.3
     needs: build
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./iroh-js

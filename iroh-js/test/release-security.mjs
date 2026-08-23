@@ -36,6 +36,13 @@ test('cross-target matrix never forces the host platform', () => {
   assert.equal(packageJson.scripts['build:target'], 'node scripts/build-target.mjs')
   for (const spec of releaseConfig.targets) {
     assert.match(spec.build, new RegExp(`build:target --target ${spec.target}(?:\\s|$)`))
+    const host = JSON.parse(spec.host)
+    if (spec.target === 'aarch64-apple-darwin') {
+      assert.deepEqual(host, ['self-hosted', 'macOS', 'ARM64'])
+    } else {
+      assert.equal(host.length, 1)
+      assert.match(host[0], /^(?:ubuntu|windows)-(?:latest|[0-9]+)$/)
+    }
   }
   const invalid = run('scripts/build-target.mjs', ['--target', 'untrusted-target'])
   assert.notEqual(invalid.status, 0)

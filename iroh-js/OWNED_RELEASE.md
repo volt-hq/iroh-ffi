@@ -53,8 +53,8 @@ Every `npm publish` uses OIDC provenance.
 ## Required GitHub controls (not encoded by this repository)
 
 Keep `.github/workflows/ci_js.yml` disabled until all controls below exist.
-The workflow itself has no PR/manual trigger and authorizes the ref on a
-GitHub-hosted runner before repository code reaches a self-hosted runner.
+The workflow itself has no PR/manual trigger and authorizes the ref before
+repository code reaches ephemeral GitHub-hosted native runners.
 
 1. Protect `volt/owned-iroh`: restrict direct pushes to designated release
    maintainers, require signed commits, block force-pushes and deletion, and do
@@ -69,9 +69,10 @@ GitHub-hosted runner before repository code reaches a self-hosted runner.
    release authorization; do not weaken or bypass those remaining controls.
 4. Do not add repository/environment `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or other
    npm credentials. The publish job alone has `id-token: write`.
-5. Keep the existing self-hosted macOS ARM64 and Linux X64 runners restricted
-   to this private trusted workflow/repository. GitHub-hosted Windows and Ubuntu
-   jobs must also be allowed.
+5. Allow GitHub-hosted Windows and Ubuntu jobs. Keep one dedicated macOS ARM64
+   runner registered only to `volt-hq/iroh-ffi`; do not reuse or move the
+   separate `volt-app` runner. Because this repository is public, never add PR,
+   manual, or arbitrary-ref triggers that could reach the local runner.
 
 The exact release-ref policy is fail-closed:
 
@@ -88,9 +89,9 @@ unverified signed tags are rejected before the build matrix.
 
 `release-targets.json` is the trusted 11-target matrix. It pins Node, Rust,
 Yarn, Zig/Python, NDK, actions, and test-container digests. Inputs that cannot
-be made repository-immutable are explicitly recorded there: protected
-self-hosted runner images, Xcode/Apple SDKs, GitHub-hosted runner images, and
-Linux distribution cross-compiler packages. Each native artifact manifest
+be made repository-immutable are explicitly recorded there: the repository-scoped
+local macOS runner, GitHub-hosted runner images, Xcode/Apple SDKs, and Linux
+distribution cross-compiler packages. Each native artifact manifest
 records the runner/tool versions and resolved distribution package versions.
 Publication fails unless every downloaded manifest matches that trusted matrix.
 

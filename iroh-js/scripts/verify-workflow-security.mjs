@@ -29,6 +29,8 @@ assert.match(uncommented, /node scripts\/verify-native-artifacts\.mjs artifacts/
 assert.match(uncommented, /stage:napi/)
 assert.match(uncommented, /--tarballs release-tarballs/)
 assert.match(uncommented, /publish:verified/)
+assert.equal((uncommented.match(/\[self-hosted, macOS, ARM64\]/g) ?? []).length, 1)
+assert.doesNotMatch(uncommented, /\[self-hosted, linux/)
 
 const authorizeSource = readFileSync(join(jsRoot, 'scripts', 'authorize-release-ref.mjs'), 'utf8')
 assert.match(authorizeSource, /branch\.protected, true/)
