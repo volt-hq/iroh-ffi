@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { inspectNativeBinary, releaseConfig } from '../scripts/release-config.mjs'
+import { inspectNativeBinary, jsRoot, releaseConfig } from '../scripts/release-config.mjs'
 
 function run(script, args = [], env = process.env) {
   return spawnSync(process.execPath, [script, ...args], {
@@ -28,6 +28,15 @@ test('owned release metadata and trusted matrix are internally consistent', () =
 test('generated loader enforces native package versions by default', () => {
   const result = run('scripts/harden-generated-loader.mjs', ['--check'])
   assert.equal(result.status, 0, result.stderr)
+})
+
+test('cross-target matrix never forces the host platform', () => {
+  const packageJson = JSON.parse(readFileSync(join(jsRoot, 'package.json'), 'utf8'))
+  assert.ok(packageJson.scripts['build:target'])
+  assert.doesNotMatch(packageJson.scripts['build:target'], /--platform/)
+  for (const spec of releaseConfig.targets) {
+    assert.match(spec.build, new RegExp(`build:target --target ${spec.target}(?:\\s|$)`))
+  }
 })
 
 test('native binary parser rejects architecture and format ambiguity', () => {

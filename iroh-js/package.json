@@ -59,6 +59,7 @@
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release --strip && node scripts/harden-generated-loader.mjs",
     "build:debug": "napi build --platform && node scripts/harden-generated-loader.mjs",
+    "build:target": "napi build --release --strip && node scripts/harden-generated-loader.mjs",
     "docs": "typedoc",
     "pack:release": "node scripts/pack-release-tarballs.mjs",
     "publish:verified": "node scripts/publish-verified-tarballs.mjs",
