@@ -31,6 +31,8 @@ assert.match(uncommented, /--tarballs release-tarballs/)
 assert.match(uncommented, /publish:verified/)
 assert.equal((uncommented.match(/\[self-hosted, macOS, ARM64\]/g) ?? []).length, 1)
 assert.doesNotMatch(uncommented, /\[self-hosted, linux/)
+assert.equal((uncommented.match(/github\.workspace \}\}:\/repo/g) ?? []).length, 5)
+assert.doesNotMatch(uncommented, /-w \/build/)
 
 const authorizeSource = readFileSync(join(jsRoot, 'scripts', 'authorize-release-ref.mjs'), 'utf8')
 assert.match(authorizeSource, /branch\.protected, true/)
