@@ -32,11 +32,13 @@ test('generated loader enforces native package versions by default', () => {
 
 test('cross-target matrix never forces the host platform', () => {
   const packageJson = JSON.parse(readFileSync(join(jsRoot, 'package.json'), 'utf8'))
-  assert.ok(packageJson.scripts['build:target'])
-  assert.doesNotMatch(packageJson.scripts['build:target'], /--platform/)
+  assert.equal(packageJson.scripts['build:target'], 'node scripts/build-target.mjs')
   for (const spec of releaseConfig.targets) {
     assert.match(spec.build, new RegExp(`build:target --target ${spec.target}(?:\\s|$)`))
   }
+  const invalid = run('scripts/build-target.mjs', ['--target', 'untrusted-target'])
+  assert.notEqual(invalid.status, 0)
+  assert.match(invalid.stderr, /untrusted build target/)
 })
 
 test('native binary parser rejects architecture and format ambiguity', () => {
