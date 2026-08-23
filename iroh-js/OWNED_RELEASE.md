@@ -16,10 +16,14 @@ The exact initial version is `1.1.1-volt.1`, derived from upstream `1.1.0`.
   `cf04296878593ad66f2462256f075cc7f37f9ba7`
 - Volt connected-home-relay filter:
   `2090823126686e2aeb2caa463b22cea3aadbf13f`
+- Volt Iroh-core authenticated relay reconnect:
+  `5cd4d861c0546538e3912a1847c5c264873c2bcb`
 
 The reactor fix keeps synchronous `watch*` registration on N-API's Tokio
 runtime so registration cannot panic on a foreign caller thread. The Volt
 relay patch exposes URLs only for statuses where `is_connected()` is true.
+`bindingCapabilities()` is the release contract for those behaviors; consumers
+must not infer watcher or reconnect safety from an upstream package version.
 
 ## Published package set
 

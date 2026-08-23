@@ -16,6 +16,11 @@ rust-version = "1.91"
 [workspace]
 members = ["iroh-js"]
 
+[patch.crates-io]
+iroh = { git = "https://github.com/volt-hq/iroh.git", rev = "5cd4d861c0546538e3912a1847c5c264873c2bcb" }
+iroh-base = { git = "https://github.com/volt-hq/iroh.git", rev = "5cd4d861c0546538e3912a1847c5c264873c2bcb" }
+iroh-relay = { git = "https://github.com/volt-hq/iroh.git", rev = "5cd4d861c0546538e3912a1847c5c264873c2bcb" }
+
 [package.metadata.maturin]
 name = "iroh"
 

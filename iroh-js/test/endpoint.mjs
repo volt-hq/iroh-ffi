@@ -2,7 +2,7 @@ import { test, suite } from 'node:test'
 import assert from 'node:assert'
 
 import pkg from '../index.js'
-const { Endpoint, EndpointTicket, RelayMode, presetMinimal } = pkg
+const { Endpoint, EndpointTicket, RelayMode, bindingCapabilities, presetMinimal } = pkg
 
 const ALPN = Array.from(Buffer.from('iroh-ffi/test/0', 'utf8'))
 
@@ -29,6 +29,13 @@ async function bindClient() {
 }
 
 suite('endpoint', () => {
+  test('reports Volt relay recovery capabilities', () => {
+    assert.deepEqual(bindingCapabilities(), {
+      connectedHomeRelayWatch: true,
+      reconnectRelay: true,
+    })
+  })
+
   test('builder + preset: id, addr, sockets, secretKey, close', async () => {
     const ep = await bindMinimal()
     const id = ep.id()
@@ -81,6 +88,20 @@ suite('endpoint', () => {
 
   test('endpoint ticket rejects garbage', () => {
     assert.throws(() => EndpointTicket.fromString('not-a-ticket'))
+  })
+
+  test('reconnectRelay rejects a closed endpoint without changing identity', async () => {
+    const ep = await bindMinimal()
+    const id = ep.id().toString()
+    await ep.close()
+    await assert.rejects(
+      () => ep.reconnectRelay({
+        url: 'https://relay.invalid',
+        authToken: 'token-b',
+      }),
+      /closed/i,
+    )
+    assert.equal(ep.id().toString(), id)
   })
 
   test('connect / echo / datagram round trip', async () => {

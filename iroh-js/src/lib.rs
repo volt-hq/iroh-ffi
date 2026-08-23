@@ -1,6 +1,7 @@
 use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
 
+mod capabilities;
 mod endpoint;
 mod key;
 mod net;
@@ -10,6 +11,7 @@ mod services;
 mod ticket;
 mod watch;
 
+pub use capabilities::*;
 pub use endpoint::*;
 pub use key::*;
 pub use net::*;

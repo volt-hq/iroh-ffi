@@ -78,6 +78,11 @@ export declare class Endpoint {
   online(): Promise<void>
   /** Insert (or replace) a relay configuration at runtime. */
   insertRelay(config: RelayConfig): Promise<void>
+  /**
+   * Replace a relay configuration and restart its active connection so the
+   * new authentication token is used for this and future attempts.
+   */
+  reconnectRelay(config: RelayConfig): Promise<void>
   /** Remove a relay configuration at runtime. */
   removeRelay(url: string): Promise<boolean>
   /** Connect to a remote endpoint via the given ALPN. */
@@ -306,6 +311,16 @@ export declare class Signature {
 export declare class WatchHandle {
   /** Stop the watcher, aborting the background task. */
   stop(): Promise<void>
+}
+
+export declare function bindingCapabilities(): BindingCapabilities
+
+/** Native behaviors Volt relies on instead of inferring safety from a package version. */
+export interface BindingCapabilities {
+  /** Home-relay callbacks are safe to register and report only connected relays. */
+  connectedHomeRelayWatch: boolean
+  /** Relay configuration replacement restarts the active relay client with the new configuration. */
+  reconnectRelay: boolean
 }
 
 /** Flat snapshot of headline connection statistics. */

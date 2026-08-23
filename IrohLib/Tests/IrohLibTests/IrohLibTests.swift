@@ -80,6 +80,12 @@ final class KeyTests: XCTestCase {
 }
 
 final class RelayTests: XCTestCase {
+    func testBindingCapabilities() {
+        let capabilities = bindingCapabilities()
+        XCTAssertTrue(capabilities.connectedHomeRelayWatch)
+        XCTAssertTrue(capabilities.reconnectRelay)
+    }
+
     func testRelayMapCrud() throws {
         let m = RelayMap.empty()
         XCTAssertTrue(m.isEmpty())
@@ -173,6 +179,23 @@ final class EndpointTests: XCTestCase {
 
     func testEndpointTicketRejectsGarbage() throws {
         XCTAssertThrowsError(try EndpointTicket.fromString(str: "not-a-ticket"))
+    }
+
+    func testReconnectRelayRejectsClosedEndpointWithoutChangingIdentity() async throws {
+        let endpoint = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
+        let identity = endpoint.id()
+        try await endpoint.close()
+        do {
+            try await endpoint.reconnectRelay(config: RelayConfig(
+                url: "https://relay.invalid",
+                quicPort: nil,
+                authToken: "token-b"
+            ))
+            XCTFail("expected reconnectRelay to reject a closed endpoint")
+        } catch {
+            XCTAssertTrue("\(error)".localizedCaseInsensitiveContains("closed"))
+        }
+        XCTAssertEqual(endpoint.id(), identity)
     }
 
     func testConnectEchoRoundtrip() async throws {

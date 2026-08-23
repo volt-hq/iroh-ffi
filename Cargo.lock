@@ -1709,8 +1709,7 @@ dependencies = [
 [[package]]
 name = "iroh"
 version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fca9b4b462c343ff88fc0af4096c186f939b602a0bc08723536ef2c31c93971"
+source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
 dependencies = [
  "backon",
  "blake3",
@@ -1760,8 +1759,7 @@ dependencies = [
 [[package]]
 name = "iroh-base"
 version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830a582cd54410dc1aa71d4786a82c3297d7b0165accd8b6dbbb3b240b48140d"
+source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
 dependencies = [
  "curve25519-dalek",
  "data-encoding",
@@ -1779,8 +1777,7 @@ dependencies = [
 [[package]]
 name = "iroh-dns"
 version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "516e4eedc38e33ab69a6bd325520332dc3d67b25454e2d590ebb84a25240dd9a"
+source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
 dependencies = [
  "arc-swap",
  "cfg_aliases",
@@ -1857,8 +1854,7 @@ dependencies = [
 [[package]]
 name = "iroh-relay"
 version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8149bb6a57126225a07d6928846d82dcedfd24ea0f863ef7b2eb475e1d726354"
+source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
 dependencies = [
  "blake3",
  "bytes",
@@ -3725,7 +3721,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",

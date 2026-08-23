@@ -1,6 +1,7 @@
 mod accept;
 #[cfg(target_os = "android")]
 mod android_init;
+mod capabilities;
 mod endpoint;
 mod error;
 mod key;
@@ -14,8 +15,8 @@ mod watch;
 use tracing_subscriber::filter::LevelFilter;
 
 pub use self::{
-    accept::*, endpoint::*, error::*, key::*, net::*, path::*, relay::*, services::*, ticket::*,
-    watch::*,
+    accept::*, capabilities::*, endpoint::*, error::*, key::*, net::*, path::*, relay::*,
+    services::*, ticket::*, watch::*,
 };
 
 uniffi::setup_scaffolding!();

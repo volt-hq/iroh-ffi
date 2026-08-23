@@ -15,6 +15,13 @@ use tokio::sync::Mutex;
 
 use crate::{CallbackError, EndpointAddr};
 
+fn connected_home_relay_urls(statuses: impl IntoIterator<Item = (bool, String)>) -> Vec<String> {
+    statuses
+        .into_iter()
+        .filter_map(|(is_connected, url)| is_connected.then_some(url))
+        .collect()
+}
+
 /// Callback invoked whenever the endpoint's [`EndpointAddr`] changes.
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
@@ -89,7 +96,11 @@ pub(crate) fn spawn_home_relay_watch(
     let task = handle.spawn(async move {
         let mut stream = endpoint.home_relay_status().stream();
         while let Some(statuses) = stream.next().await {
-            let urls: Vec<String> = statuses.into_iter().map(|s| s.url().to_string()).collect();
+            let urls = connected_home_relay_urls(
+                statuses
+                    .into_iter()
+                    .map(|status| (status.is_connected(), status.url().to_string())),
+            );
             if let Err(err) = cb.on_change(urls).await {
                 tracing::warn!("home relay callback error: {err:?}");
                 break;
@@ -114,4 +125,27 @@ pub(crate) fn spawn_network_change_watch(
         }
     });
     WatchHandle::new(AbortOnDropHandle::new(task))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::connected_home_relay_urls;
+
+    #[test]
+    fn home_relay_output_contains_only_connected_statuses() {
+        let statuses = [
+            (false, "https://disconnected.example".to_owned()),
+            (true, "https://connected-one.example".to_owned()),
+            (false, "https://failed.example".to_owned()),
+            (true, "https://connected-two.example".to_owned()),
+        ];
+
+        assert_eq!(
+            connected_home_relay_urls(statuses),
+            vec![
+                "https://connected-one.example".to_owned(),
+                "https://connected-two.example".to_owned(),
+            ]
+        );
+    }
 }

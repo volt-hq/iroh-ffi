@@ -490,6 +490,19 @@ impl Endpoint {
         Ok(())
     }
 
+    /// Replace a relay configuration and restart its active connection so the
+    /// new authentication token is used for this and future attempts.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn reconnect_relay(&self, config: RelayConfig) -> Result<(), IrohError> {
+        let config: iroh::RelayConfig = config.try_into()?;
+        let url = config.url.clone();
+        self.inner
+            .reconnect_relay(url, Arc::new(config))
+            .await
+            .map_err(anyhow::Error::from)?;
+        Ok(())
+    }
+
     /// Remove a relay configuration at runtime. Returns true if a relay was
     /// removed.
     #[uniffi::method(async_runtime = "tokio")]
@@ -1090,6 +1103,28 @@ mod tests {
         server_task.await.unwrap();
         client.close().await.unwrap();
         server.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_reconnect_relay_rejects_closed_endpoint_without_changing_identity() {
+        let endpoint = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_minimal()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        let identity = endpoint.id();
+        endpoint.close().await.unwrap();
+        let error = endpoint
+            .reconnect_relay(RelayConfig {
+                url: "https://relay.invalid".to_owned(),
+                quic_port: None,
+                auth_token: Some("token-b".to_owned()),
+            })
+            .await
+            .expect_err("closed endpoint accepted relay reconnect");
+        assert!(error.to_string().to_lowercase().contains("closed"));
+        assert_eq!(endpoint.id().to_string(), identity.to_string());
     }
 
     #[tokio::test]

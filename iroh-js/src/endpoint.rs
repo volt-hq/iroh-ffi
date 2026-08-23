@@ -441,6 +441,19 @@ impl Endpoint {
         Ok(())
     }
 
+    /// Replace a relay configuration and restart its active connection so the
+    /// new authentication token is used for this and future attempts.
+    #[napi]
+    pub async fn reconnect_relay(&self, config: crate::RelayConfig) -> Result<()> {
+        let config: iroh::RelayConfig = config.try_into()?;
+        let url = config.url.clone();
+        self.inner
+            .reconnect_relay(url, Arc::new(config))
+            .await
+            .map_err(anyhow::Error::from)?;
+        Ok(())
+    }
+
     /// Remove a relay configuration at runtime.
     #[napi]
     pub async fn remove_relay(&self, url: String) -> Result<bool> {

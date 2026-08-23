@@ -605,6 +605,7 @@ module.exports.SendStream = nativeBinding.SendStream
 module.exports.ServicesClient = nativeBinding.ServicesClient
 module.exports.Signature = nativeBinding.Signature
 module.exports.WatchHandle = nativeBinding.WatchHandle
+module.exports.bindingCapabilities = nativeBinding.bindingCapabilities
 module.exports.LogLevel = nativeBinding.LogLevel
 module.exports.PathEventKind = nativeBinding.PathEventKind
 module.exports.presetIrohServices = nativeBinding.presetIrohServices
