@@ -1709,7 +1709,7 @@ dependencies = [
 [[package]]
 name = "iroh"
 version = "1.0.2"
-source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
+source = "git+https://github.com/volt-hq/iroh.git?rev=0a414d96e41322a0f0f2cc5d294c380689e6c9b1#0a414d96e41322a0f0f2cc5d294c380689e6c9b1"
 dependencies = [
  "backon",
  "blake3",
@@ -1759,7 +1759,7 @@ dependencies = [
 [[package]]
 name = "iroh-base"
 version = "1.0.2"
-source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
+source = "git+https://github.com/volt-hq/iroh.git?rev=0a414d96e41322a0f0f2cc5d294c380689e6c9b1#0a414d96e41322a0f0f2cc5d294c380689e6c9b1"
 dependencies = [
  "curve25519-dalek",
  "data-encoding",
@@ -1777,7 +1777,7 @@ dependencies = [
 [[package]]
 name = "iroh-dns"
 version = "1.0.2"
-source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
+source = "git+https://github.com/volt-hq/iroh.git?rev=0a414d96e41322a0f0f2cc5d294c380689e6c9b1#0a414d96e41322a0f0f2cc5d294c380689e6c9b1"
 dependencies = [
  "arc-swap",
  "cfg_aliases",
@@ -1854,7 +1854,7 @@ dependencies = [
 [[package]]
 name = "iroh-relay"
 version = "1.0.2"
-source = "git+https://github.com/volt-hq/iroh.git?rev=5cd4d861c0546538e3912a1847c5c264873c2bcb#5cd4d861c0546538e3912a1847c5c264873c2bcb"
+source = "git+https://github.com/volt-hq/iroh.git?rev=0a414d96e41322a0f0f2cc5d294c380689e6c9b1#0a414d96e41322a0f0f2cc5d294c380689e6c9b1"
 dependencies = [
  "blake3",
  "bytes",
