@@ -32,11 +32,13 @@ jobs:
       - name: Verify existing Apple toolchain and install isolated native cargo-make
         run: bash scripts/ci/setup_swift_runner.sh
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
+      # Cargo can prefer ~/.cargo/bin for subcommands even after PATH setup.
+      # Invoke the verified native tool directly without replacing global tools.
       - name: Build xcframework + verify + zip
         run: |
-          cargo make swift-xcframework
-          cargo make verify-swift-xcframework
-          cargo make verify-swift-consumer
+          "$RUNNER_TEMP/volt-swift-tools/bin/cargo-make" make swift-xcframework
+          "$RUNNER_TEMP/volt-swift-tools/bin/cargo-make" make verify-swift-xcframework
+          "$RUNNER_TEMP/volt-swift-tools/bin/cargo-make" make verify-swift-consumer
           bash scripts/release/zip_xcframework.sh
       - name: Bake SHA into Package.swift
         run: bash scripts/release/swift_bake_sha.sh
