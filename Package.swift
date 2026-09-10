@@ -25,7 +25,7 @@ import Foundation
 // here always matches the IrohLib.xcframework.zip attached to the GitHub
 // release — never a cross-host determinism game.
 let releaseTag = "v1.1.1-volt.3"
-let releaseChecksum = "965bf445e7a08931192602bf35fb767aa84dee6ea73c5d9f14d19d38b77d1025"
+let releaseChecksum = "c051aff6500fef54764578fcf83849d3ff9871436efd966c62fa752f4a3b0f36"
 
 let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let localBuiltBinary = packageDir
