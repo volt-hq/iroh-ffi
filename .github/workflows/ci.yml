@@ -43,10 +43,20 @@ jobs:
           toolchain: 1.97.1
           components: rustfmt, clippy
       - uses: davidB/rust-cargo-make@eb4338cc4e8145107109b722ee749f23e61455f0 # v1.12.0
+        if: runner.os != 'macOS'
         with:
           version: 0.37.24
+      - name: Install isolated native cargo-make on Apple Silicon
+        if: runner.os == 'macOS'
+        run: |
+          cargo install cargo-make --version 0.37.24 --locked --root "$RUNNER_TEMP/volt-rust-tools"
+          "$RUNNER_TEMP/volt-rust-tools/bin/cargo-make" make --version
       - name: cargo make test-rust
+        if: runner.os != 'macOS'
         run: cargo make test-rust
+      - name: Test Rust with the isolated native task runner
+        if: runner.os == 'macOS'
+        run: '"$RUNNER_TEMP/volt-rust-tools/bin/cargo-make" make test-rust'
 
   fmt-clippy-docs:
     timeout-minutes: 30

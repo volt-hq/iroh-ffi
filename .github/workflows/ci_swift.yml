@@ -14,32 +14,32 @@ concurrency:
 
 env:
   IROH_FORCE_STAGING_RELAYS: "1"
+  DEVELOPER_DIR: /Applications/Xcode-26.6.0.app/Contents/Developer
+  IROH_IOS_SIM_DEST: platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5
 
 jobs:
   swift:
     name: Swift - Full xcframework build + test (iOS + macOS)
-    timeout-minutes: 60
-    runs-on: [self-hosted, macOS, ARM64, xcode16]
+    # The measured cold five-target build takes about 83 minutes on this runner.
+    timeout-minutes: 150
+    runs-on: [self-hosted, macOS, ARM64, iroh-ffi-release]
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
-      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
-        with:
-          toolchain: 1.97.1
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin,aarch64-apple-ios-macabi
+      - name: Verify existing Apple toolchain and install isolated native cargo-make
+        run: bash scripts/ci/setup_swift_runner.sh
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
-      - uses: davidB/rust-cargo-make@eb4338cc4e8145107109b722ee749f23e61455f0 # v1.12.0
-        with:
-          version: 0.37.24
+      # Cargo can prefer ~/.cargo/bin for subcommands even after PATH setup.
+      # Invoke the verified native tool directly without replacing global tools.
       - name: cargo make test-swift
         # Builds the full Apple xcframework + runs the IrohLib test suite for
         # macOS via xcodebuild test.
-        run: cargo make test-swift
+        run: '"$RUNNER_TEMP/volt-swift-tools/bin/cargo-make" make test-swift'
       - name: cargo make verify-swift-xcframework
         # Asserts per-slice bundle layout (shallow iOS, deep macOS — Xcode 27+
         # rejects shallow Info.plist on macOS, iroh-ffi#247).
-        run: cargo make verify-swift-xcframework
+        run: '"$RUNNER_TEMP/volt-swift-tools/bin/cargo-make" make verify-swift-xcframework'
       - name: cargo make verify-swift-consumer
         # iOS device build + iOS Simulator full test run (boots a sim, runs
         # IrohLibTests on iOS runtime). Catches link errors + iOS-side runtime
         # regressions that macOS-only test-swift can't see.
-        run: cargo make verify-swift-consumer
+        run: '"$RUNNER_TEMP/volt-swift-tools/bin/cargo-make" make verify-swift-consumer'

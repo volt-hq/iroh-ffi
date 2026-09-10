@@ -200,17 +200,18 @@ set -eu
 # Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
 # run forces re-extraction of the just-built xcframework.
 #
-# Run xcodebuild as the logged-in console user and force arm64, so it uses
-# the right session and the arm64-only xcframework macOS slice.
+# The runner must already belong to the logged-in console user. Do not use
+# launchctl asuser: an unprivileged runner cannot switch audit sessions,
+# even when the requested user is its own. Force the arm64 framework slice.
 CONSOLE_USER=$(stat -f%Su /dev/console)
 CONSOLE_UID=$(id -u "$CONSOLE_USER")
 echo "console user: $CONSOLE_USER ($CONSOLE_UID)"
-if [ "$CONSOLE_USER" = "root" ]; then
-  echo "ERROR: no interactive GUI session; cannot run xcodebuild test" >&2
+if [ "$CONSOLE_UID" = "0" ] || [ "$(id -u)" != "$CONSOLE_UID" ]; then
+  echo "ERROR: run Swift tests as the logged-in console user ($CONSOLE_USER)" >&2
   exit 1
 fi
 rm -rf .xcode-ddata
-launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild test \
+arch -arm64 xcodebuild test \
   -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
 '''
 
@@ -267,6 +268,8 @@ for slice_dir in "$XCF"/*/; do
 done
 
 [ $fail -eq 0 ] || { echo "verify-swift-xcframework: FAILED" >&2; exit 1; }
+python3 scripts/test_apple_public_udp.py
+python3 scripts/verify_apple_public_udp.py "$XCF"
 echo "verify-swift-xcframework: OK"
 '''
 
@@ -382,12 +385,12 @@ if ! xcodebuild -showsdks 2>/dev/null | grep -q "iphoneos"; then
   exit 1
 fi
 
-# xcodebuild test on a Simulator destination needs an interactive GUI session
-# (Simulator.app spawns under the console user). Mirror test-swift's pattern.
+# Require the logged-in console user, as in test-swift. Run directly under
+# that user instead of attempting a privileged audit-session switch.
 CONSOLE_USER=$(stat -f%Su /dev/console)
 CONSOLE_UID=$(id -u "$CONSOLE_USER")
-if [ "$CONSOLE_USER" = "root" ]; then
-  echo "ERROR: no interactive GUI session; cannot run xcodebuild test on iOS sim" >&2
+if [ "$CONSOLE_UID" = "0" ] || [ "$(id -u)" != "$CONSOLE_UID" ]; then
+  echo "ERROR: run Swift tests as the logged-in console user ($CONSOLE_USER)" >&2
   exit 1
 fi
 
@@ -435,7 +438,7 @@ if [ -z "$SIM_ID" ]; then
 fi
 DEST="${IROH_IOS_SIM_DEST:-platform=iOS Simulator,id=$SIM_ID}"
 echo "==> xcodebuild test on iOS Simulator ($DEST)"
-launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild test \
+arch -arm64 xcodebuild test \
   -scheme IrohLib \
   -destination "$DEST" \
   -derivedDataPath .xcode-verify-ddata
