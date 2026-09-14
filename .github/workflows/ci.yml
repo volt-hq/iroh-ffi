@@ -29,9 +29,9 @@ jobs:
         name: [ubuntu-latest, macOS-arm-latest, windows-latest]
         include:
           - name: ubuntu-latest
-            runner: [self-hosted, linux, X64]
+            runner: [ubuntu-24.04]
           - name: macOS-arm-latest
-            runner: [self-hosted, macOS, ARM64]
+            runner: [macos-15]
           - name: windows-latest
             runner: [windows-latest]
     steps:
