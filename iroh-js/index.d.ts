@@ -155,6 +155,15 @@ export declare class EndpointBuilder {
   alpns(alpns: Array<Array<number>>): void
   /** Set the relay mode. */
   relayMode(mode: RelayMode): void
+  /**
+   * Replace HTTPS service trust roots with 1–8 DER certificates (16 KiB each).
+   *
+   * Applies to relays and other CA-authenticated services, not Iroh peers.
+   * Hostname, validity and signature verification remain enforced. When unset,
+   * the preset's default trust is unchanged. Invalid input leaves the builder
+   * unchanged; configure after applying the preset and before binding.
+   */
+  caRoots(certificates: Array<Array<number>>): void
   /** Set the address the endpoint binds to (`host:port`). */
   bindAddr(addr: string): void
   /** Bind the endpoint. */

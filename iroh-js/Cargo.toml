@@ -20,6 +20,7 @@ iroh-metrics = "1.0.0"
 iroh-relay = { version = "1.0.0", default-features = false }
 iroh-services = { version = "1.0.0", default-features = false }
 iroh-tickets = "1.0.0"
+rustls = { version = "=0.23.42", default-features = false, features = ["std"] }
 n0-future = "0.3"
 tokio = "1.25.0"
 url = "2.4"

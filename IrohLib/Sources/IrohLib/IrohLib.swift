@@ -2757,6 +2757,16 @@ public protocol EndpointBuilderProtocol: AnyObject, Sendable {
     func bindAddr(addr: String) throws 
     
     /**
+     * Replace HTTPS service trust roots with 1–8 DER certificates (16 KiB each).
+     *
+     * Applies to relays and other CA-authenticated services, not Iroh peers.
+     * Hostname, validity and signature verification remain enforced. When unset,
+     * the preset's default trust is unchanged. Invalid input leaves the builder
+     * unchanged; configure after applying the preset and before binding.
+     */
+    func caRoots(certificates: [Data]) throws
+
+    /**
      * Set the relay mode.
      */
     func relayMode(mode: RelayMode) 
@@ -2917,6 +2927,22 @@ open func bindAddr(addr: String)throws   {try rustCallWithError(FfiConverterType
     uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(addr),$0
+    )
+}
+}
+
+    /**
+     * Replace HTTPS service trust roots with 1–8 DER certificates (16 KiB each).
+     *
+     * Applies to relays and other CA-authenticated services, not Iroh peers.
+     * Hostname, validity and signature verification remain enforced. When unset,
+     * the preset's default trust is unchanged. Invalid input leaves the builder
+     * unchanged; configure after applying the preset and before binding.
+     */
+open func caRoots(certificates: [Data])throws   {try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
+    uniffi_iroh_ffi_fn_method_endpointbuilder_ca_roots(
+            self.uniffiCloneHandle(),
+        FfiConverterSequenceData.lower(certificates),$0
     )
 }
 }
@@ -9998,6 +10024,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_method_endpointbuilder_ca_roots() != 26313) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode() != 17405) {

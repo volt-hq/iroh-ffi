@@ -1,6 +1,8 @@
 use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
 
+#[path = "../../src/ca_tls.rs"]
+mod ca_tls;
 mod capabilities;
 mod endpoint;
 mod key;

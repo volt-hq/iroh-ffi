@@ -47,6 +47,7 @@ iroh-metrics = { version = "1.0.0" }
 iroh-relay = { version = "1.0.0", default-features = false }
 iroh-services = { version = "1.0.0", default-features = false }
 iroh-tickets = { version = "1.0.0" }
+rustls = { version = "=0.23.42", default-features = false, features = ["std"] }
 n0-error = { version = "1.0.0" }
 thiserror = "2.0"
 tokio = "1.25.0"

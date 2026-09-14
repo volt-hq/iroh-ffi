@@ -1136,6 +1136,8 @@ internal object IntegrityCheckingUniffiLib {
 
     external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr(): Int
 
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_ca_roots(): Int
+
     external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode(): Int
 
     external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key(): Int
@@ -1644,6 +1646,12 @@ internal object UniffiLib {
     external fun uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(
         `ptr`: Long,
         `addr`: RustBuffer.ByValue,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_ca_roots(
+        `ptr`: Long,
+        `certificates`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
@@ -2701,6 +2709,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_ca_roots() != 26313) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode() != 17405) {
@@ -6687,6 +6698,16 @@ public interface EndpointBuilderInterface {
     fun `bindAddr`(`addr`: kotlin.String)
 
     /**
+     * Replace HTTPS service trust roots with 1–8 DER certificates (16 KiB each).
+     *
+     * Applies to relays and other CA-authenticated services, not Iroh peers.
+     * Hostname, validity and signature verification remain enforced. When unset,
+     * the preset's default trust is unchanged. Invalid input leaves the builder
+     * unchanged; configure after applying the preset and before binding.
+     */
+    fun `caRoots`(`certificates`: List<kotlin.ByteArray>)
+
+    /**
      * Set the relay mode.
      */
     fun `relayMode`(`mode`: RelayMode)
@@ -6912,6 +6933,26 @@ open class EndpointBuilder :
                 UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(
                     it,
                     FfiConverterString.lower(`addr`),
+                    _status,
+                )
+            }
+        }
+
+    /**
+     * Replace HTTPS service trust roots with 1–8 DER certificates (16 KiB each).
+     *
+     * Applies to relays and other CA-authenticated services, not Iroh peers.
+     * Hostname, validity and signature verification remain enforced. When unset,
+     * the preset's default trust is unchanged. Invalid input leaves the builder
+     * unchanged; configure after applying the preset and before binding.
+     */
+    @Throws(IrohException::class)
+    override fun `caRoots`(`certificates`: List<kotlin.ByteArray>) =
+        callWithHandle {
+            uniffiRustCallWithError(IrohException) { _status ->
+                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_ca_roots(
+                    it,
+                    FfiConverterSequenceByteArray.lower(`certificates`),
                     _status,
                 )
             }
