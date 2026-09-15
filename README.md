@@ -36,6 +36,20 @@ cargo make swift-xcframework # full Apple xcframework (iOS + macOS)
 
 See the per-language READMEs below and [DEVELOPERS.md](DEVELOPERS.md) for details. Release flow is documented in [RELEASING.md](RELEASING.md).
 
+## Private HTTPS trust
+
+`EndpointBuilder.ca_roots` (`caRoots` in JavaScript/Swift/Kotlin) replaces the
+trusted roots for HTTPS relays and other CA-authenticated services. Pass 1–8
+DER-encoded certificates, at most 16 KiB each, after the preset and before binding.
+Malformed or oversized input is rejected without changing the builder. Repeated
+calls replace the previous root set; they do not append public roots.
+
+Hostname, certificate validity, and signature checks remain enabled. Iroh peer
+identity authentication is unchanged. Leaving this method unset preserves the
+preset's normal trust configuration. This API does not provide an insecure TLS
+mode. Private test rigs must generate their own CA rather than use the public
+fixtures under `tests/fixtures/tls`.
+
 ## Language-Specific READMEs
 
 * [**Swift readme**](README.swift.md)

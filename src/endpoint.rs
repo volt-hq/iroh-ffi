@@ -128,6 +128,23 @@ impl EndpointBuilder {
         self.map(|b| b.relay_mode(mode));
     }
 
+    /// Replace HTTPS service trust roots with 1–8 DER certificates (16 KiB each).
+    ///
+    /// Applies to relays and other CA-authenticated services, not Iroh peers.
+    /// Hostname, validity and signature verification remain enforced. When unset,
+    /// the preset's default trust is unchanged. Invalid input leaves the builder
+    /// unchanged; configure after applying the preset and before binding.
+    pub fn ca_roots(&self, certificates: Vec<Vec<u8>>) -> Result<(), IrohError> {
+        let config = crate::ca_tls::custom_ca_tls_config(certificates)
+            .map_err(|error| IrohError::invalid_input(error.to_string()))?;
+        let mut guard = self.inner.lock().unwrap();
+        let builder = guard
+            .take()
+            .ok_or_else(|| IrohError::invalid_input("EndpointBuilder already consumed"))?;
+        *guard = Some(builder.ca_tls_config(config));
+        Ok(())
+    }
+
     /// Set the address the endpoint binds to (`host:port`).
     pub fn bind_addr(&self, addr: String) -> Result<(), IrohError> {
         let socket = std::net::SocketAddr::from_str(&addr).map_err(anyhow::Error::from)?;

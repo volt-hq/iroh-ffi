@@ -1,6 +1,9 @@
 mod accept;
 #[cfg(target_os = "android")]
 mod android_init;
+mod ca_tls;
+#[cfg(test)]
+mod ca_tls_tests;
 mod capabilities;
 mod endpoint;
 mod error;

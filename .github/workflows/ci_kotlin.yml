@@ -26,9 +26,9 @@ jobs:
         name: [ubuntu-latest, macOS-arm-latest]
         include:
           - name: ubuntu-latest
-            runner: [self-hosted, linux, X64]
+            runner: [ubuntu-24.04]
           - name: macOS-arm-latest
-            runner: [self-hosted, macOS, ARM64]
+            runner: [macos-15]
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
@@ -38,16 +38,28 @@ jobs:
           toolchain: 1.97.1
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.2
       - uses: davidB/rust-cargo-make@eb4338cc4e8145107109b722ee749f23e61455f0 # v1.12.0
+        if: runner.os != 'macOS'
         with:
           version: 0.37.24
+      - name: Install isolated native cargo-make on Apple Silicon
+        if: runner.os == 'macOS'
+        run: |
+          cargo install cargo-make --version 0.37.24 --locked --root "$RUNNER_TEMP/volt-kotlin-tools"
+          "$RUNNER_TEMP/volt-kotlin-tools/bin/cargo-make" make --version
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.0.0
         with:
           distribution: "temurin"
-          java-version: "21.0.8+9"
+          java-version: "21.0.8+9.0.LTS"
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         if: matrix.name != 'linux-aarch64'
+        with:
+          packages: platform-tools
       - run: cargo make test-kotlin
+        if: runner.os != 'macOS'
+      - name: Test Kotlin with the isolated native task runner
+        if: runner.os == 'macOS'
+        run: '"$RUNNER_TEMP/volt-kotlin-tools/bin/cargo-make" make test-kotlin'
 
   kotlin-jvm-consumer-smoke:
     name: Kotlin - JVM consumer smoke (${{ matrix.name }})
@@ -58,15 +70,13 @@ jobs:
       matrix:
         include:
           - name: linux-x86_64
-            runner: [self-hosted, linux, X64]
+            runner: [ubuntu-24.04]
             cargo_target: x86_64-unknown-linux-gnu
           - name: linux-aarch64
-            runner: [self-hosted, linux, ARM64]
+            runner: [ubuntu-24.04-arm]
             cargo_target: aarch64-unknown-linux-gnu
           - name: macOS-aarch64
-            # xcode16 → native-arm runner pool; the unlabeled macOS/ARM64 pool
-            # is Rosetta'd and uname misreports x86_64.
-            runner: [self-hosted, macOS, ARM64, xcode16]
+            runner: [macos-15]
             cargo_target: aarch64-apple-darwin
           - name: windows-x86_64
             runner: [windows-latest]
@@ -88,24 +98,36 @@ jobs:
       # taiki-e/install-action has no aarch64-linux cargo-make and davidB
       # ships x86_64-only; cargo install works on every host.
       - name: Install cargo-make
+        if: runner.os != 'macOS'
         shell: bash
         run: |
           if ! command -v cargo-make >/dev/null 2>&1; then
             cargo install --locked --version 0.37.24 cargo-make
           fi
+      - name: Install isolated native cargo-make on Apple Silicon
+        if: runner.os == 'macOS'
+        run: |
+          cargo install cargo-make --version 0.37.24 --locked --root "$RUNNER_TEMP/volt-kotlin-tools"
+          "$RUNNER_TEMP/volt-kotlin-tools/bin/cargo-make" make --version
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.0.0
         with:
           distribution: "temurin"
-          java-version: "21.0.8+9"
+          java-version: "21.0.8+9.0.LTS"
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         if: matrix.name != 'linux-aarch64'
+        with:
+          packages: platform-tools
       - run: cargo make verify-kotlin-consumer
+        if: runner.os != 'macOS'
+      - name: Verify Kotlin consumer with the isolated native task runner
+        if: runner.os == 'macOS'
+        run: '"$RUNNER_TEMP/volt-kotlin-tools/bin/cargo-make" make verify-kotlin-consumer'
 
   kotlin-android:
     name: Kotlin - Android cross-build
     timeout-minutes: 45
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
         with:
@@ -121,8 +143,10 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.0.0
         with:
           distribution: "temurin"
-          java-version: "21.0.8+9"
+          java-version: "21.0.8+9.0.LTS"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
       - uses: arqu/setup-ndk@4f8a02c22e2c17ff9ebba9026e599da847aa8374
         id: setup-ndk
         with:
@@ -135,8 +159,7 @@ jobs:
   kotlin-android-consumer-smoke:
     name: Kotlin - Android consumer smoke (emulator)
     timeout-minutes: 45
-    # ubuntu-latest has /dev/kvm via nested-virt; kotlin-android's
-    # self-hosted runner doesn't.
+    # GitHub-hosted Ubuntu provides /dev/kvm for the emulator.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
@@ -155,6 +178,8 @@ jobs:
           distribution: "temurin"
           java-version: "17.0.16+8"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
       - uses: arqu/setup-ndk@4f8a02c22e2c17ff9ebba9026e599da847aa8374
         id: setup-ndk
         with:
