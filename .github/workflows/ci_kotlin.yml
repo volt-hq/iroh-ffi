@@ -53,6 +53,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         if: matrix.name != 'linux-aarch64'
+        with:
+          packages: platform-tools
       - run: cargo make test-kotlin
         if: runner.os != 'macOS'
       - name: Test Kotlin with the isolated native task runner
@@ -114,6 +116,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         if: matrix.name != 'linux-aarch64'
+        with:
+          packages: platform-tools
       - run: cargo make verify-kotlin-consumer
         if: runner.os != 'macOS'
       - name: Verify Kotlin consumer with the isolated native task runner
@@ -141,6 +145,8 @@ jobs:
           distribution: "temurin"
           java-version: "21.0.8+9.0.LTS"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
       - uses: arqu/setup-ndk@4f8a02c22e2c17ff9ebba9026e599da847aa8374
         id: setup-ndk
         with:
@@ -172,6 +178,8 @@ jobs:
           distribution: "temurin"
           java-version: "17.0.16+8"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
       - uses: arqu/setup-ndk@4f8a02c22e2c17ff9ebba9026e599da847aa8374
         id: setup-ndk
         with:
